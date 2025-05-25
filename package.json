@@ -9,7 +9,6 @@
     "files": [
         "dist/**/*",
         "src/types/**/*",
-        "docs/example.png",
         "README.md",
         "LICENSE"
     ],

@@ -2,6 +2,8 @@
 
 A modern TypeScript library for creating hand-drawn style charts inspired by comics and sketches. Built with D3.js and designed with type safety and excellent developer experience in mind.
 
+[Example](https://xyjdry.csb.app)
+
 ## Features
 
 - 🎨 **Hand-drawn/sketched visual style** - Authentic comic-book aesthetic
