@@ -1,0 +1,10 @@
+{
+  "rules": {
+    "property-no-unknown": [
+      true,
+      {
+        "ignoreProperties": ["alignment-baseline", "dominant-baseline"]
+      }
+    ]
+  }
+}

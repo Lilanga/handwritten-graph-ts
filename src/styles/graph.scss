@@ -1,0 +1,213 @@
+// we are using Humor Sans, a playful font inspired by the xkcd comic style.
+@font-face {
+    font-family: 'xkcd';
+    src: url('../assets/Humor-Sans.ttf');
+}
+
+// Handwritten Graph Library Styles
+.handwritten-graph-container {
+    font-family: 'xkcd', 'Comic Sans MS', cursive, sans-serif;
+    user-select: none;
+
+    svg {
+        overflow: visible;
+
+        // Text elements
+        text {
+            font-family: inherit;
+            dominant-baseline: central;
+            alignment-baseline: middle;
+        }
+
+        // Axes styling
+        .axis {
+            .domain {
+                stroke: #333;
+                stroke-width: 2;
+            }
+
+            .tick line {
+                stroke: #333;
+                stroke-width: 1;
+            }
+
+            .tick text {
+                fill: #333;
+                font-size: 12px;
+            }
+        }
+
+        // Grid styling
+        .grid {
+            .tick line {
+                stroke: #e0e0e0;
+                stroke-opacity: 0.7;
+                stroke-dasharray: 2, 2;
+            }
+
+            .domain {
+                display: none;
+            }
+        }
+
+        // Line chart specific styles
+        .line {
+            fill: none;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+
+            &:hover {
+                stroke-width: 4;
+            }
+        }
+
+        .dot {
+            cursor: pointer;
+            transition: r 0.2s ease;
+
+            &:hover {
+                r: 6;
+                stroke: #000;
+                stroke-width: 2;
+            }
+        }
+
+        // Hover line
+        .hover-line {
+            pointer-events: none;
+            stroke: #888;
+            stroke-width: 1;
+            stroke-dasharray: 3, 3;
+            opacity: 0;
+        }
+
+        // Pie chart specific styles
+        .arc {
+            cursor: pointer;
+            transition: transform 0.2s ease;
+
+            path {
+                stroke: white;
+                stroke-width: 2;
+            }
+
+            &:hover {
+                transform: scale(1.05);
+            }
+        }
+
+        // Legend styling
+        .legend {
+            font-size: 14px;
+
+            rect {
+                rx: 2;
+                ry: 2;
+            }
+
+            text {
+                alignment-baseline: middle;
+                dominant-baseline: central;
+            }
+        }
+
+        // Tooltip styling
+        .xkcd-tooltip {
+            pointer-events: none;
+            z-index: 1000;
+
+            rect {
+                fill: white;
+                fill-opacity: 0.95;
+                stroke: #333;
+                stroke-width: 2;
+                rx: 5;
+                ry: 5;
+            }
+
+            text {
+                font-size: 13px;
+                fill: #333;
+                alignment-baseline: middle;
+                dominant-baseline: central;
+            }
+        }
+
+        // Hand-drawn effects
+        .hand-drawn-axis {
+
+            .domain,
+            .tick line {
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+        }
+
+        // Interactive elements
+        .hover-area {
+            cursor: pointer;
+            opacity: 0;
+        }
+
+        // Animation classes
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .scale-in {
+            animation: scaleIn 0.3s ease-out;
+        }
+    }
+}
+
+// Animations
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+    .handwritten-graph-container {
+        svg {
+            .legend {
+                font-size: 12px;
+            }
+
+            .axis .tick text {
+                font-size: 10px;
+            }
+        }
+    }
+}
+
+// Print styles
+@media print {
+    .handwritten-graph-container {
+        svg {
+
+            .hover-line,
+            .hover-area {
+                display: none;
+            }
+        }
+    }
+}

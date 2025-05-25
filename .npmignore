@@ -1,0 +1,29 @@
+# Source files
+src/
+examples/
+__tests__/
+
+# Development files
+*.config.js
+*.config.json
+.eslintrc.json
+tsconfig.json
+jest.config.js
+
+# Development dependencies
+node_modules/
+coverage/
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+
+# Git files
+.git/
+.gitignore
+
+# Logs
+*.log

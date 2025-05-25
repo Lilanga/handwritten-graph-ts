@@ -1,0 +1,88 @@
+{
+    "name": "handwritten-graph",
+    "version": "1.0.4",
+    "description": "A TypeScript library to create handwritten-style line graphs and pie charts using D3.js",
+    "main": "dist/handwritten-graph.js",
+    "module": "dist/handwritten-graph.js",
+    "types": "dist/index.d.ts",
+    "typings": "dist/index.d.ts",
+    "files": [
+        "dist/**/*",
+        "src/types/**/*",
+        "docs/example.png",
+        "README.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "build": "npm run build:clean && npm run build:webpack && npm run build:types && npm run validate:types",
+        "build:clean": "rimraf dist",
+        "build:webpack": "cross-env NODE_ENV=production webpack --mode production",
+        "build:types": "tsc --emitDeclarationOnly --outDir dist",
+        "validate:types": "node scripts/validate-types.js",
+        "dev": "webpack --mode development --watch",
+        "type-check": "tsc --noEmit",
+        "type-check:watch": "tsc --noEmit --watch",
+        "lint": "eslint \"src/**/*.ts\" --fix",
+        "test": "jest",
+        "test:watch": "jest --watch",
+        "test:coverage": "jest --coverage",
+        "prepare": "npm run build",
+        "prepublishOnly": "npm run test && npm run type-check && npm run lint",
+        "preversion": "npm run lint",
+        "version": "git add -A src",
+        "postversion": "git push && git push --tags"
+    },
+    "dependencies": {
+        "d3": "^7.0.0"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.26.10",
+        "@babel/preset-env": "^7.26.9",
+        "@babel/preset-typescript": "^7.26.9",
+        "@types/d3": "^7.4.3",
+        "@types/jest": "^29.5.12",
+        "@typescript-eslint/eslint-plugin": "^6.21.0",
+        "@typescript-eslint/parser": "^6.21.0",
+        "babel-loader": "^8.4.1",
+        "clean-webpack-plugin": "^4.0.0",
+        "cross-env": "^7.0.0",
+        "css-loader": "^6.11.0",
+        "eslint": "^8.57.0",
+        "identity-obj-proxy": "^3.0.0",
+        "jest": "^29.7.0",
+        "jest-environment-jsdom": "^29.7.0",
+        "mini-css-extract-plugin": "^2.9.2",
+        "rimraf": "^5.0.5",
+        "sass": "^1.86.0",
+        "sass-loader": "^12.6.0",
+        "style-loader": "^3.3.4",
+        "ts-jest": "^29.1.2",
+        "ts-loader": "^9.5.1",
+        "typescript": "^5.4.5",
+        "webpack": "^5.98.0",
+        "webpack-cli": "^4.10.0"
+    },
+    "keywords": [
+        "typescript",
+        "d3",
+        "handwritten",
+        "line-graph",
+        "graph",
+        "visualization",
+        "chart",
+        "pie-chart",
+        "svg",
+        "data-visualization",
+        "handwritten-graph",
+        "handwritten-chart"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Lilanga/handwritten-graph-ts.git"
+    },
+    "author": "Lilanga Gamage",
+    "license": "MIT",
+    "engines": {
+        "node": ">=16.0.0"
+    }
+}
