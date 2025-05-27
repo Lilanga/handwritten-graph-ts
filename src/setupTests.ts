@@ -153,7 +153,7 @@ jest.mock('d3', () => {
             // Create a scale function that can be called with values
             const scaleFn = jest.fn((value: string) => {
                 // Mock implementation: return a simple position based on value
-                const index = ['A', 'B', 'C', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'].indexOf(value);
+                const index = ['A', 'B', 'C', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Q1', 'Q2', 'Q3', 'Q4'].indexOf(value);
                 return index >= 0 ? index * 50 : 0;
             });
 
@@ -161,6 +161,38 @@ jest.mock('d3', () => {
             scaleFn.domain = jest.fn(() => scaleFn);
             scaleFn.range = jest.fn(() => scaleFn);
             scaleFn.padding = jest.fn(() => scaleFn);
+
+            return scaleFn;
+        }),
+        scaleBand: jest.fn(() => {
+            // Create a scale function that can be called with values
+            const scaleFn = jest.fn((value: string) => {
+                // Mock implementation: return a simple position based on value
+                const index = ['A', 'B', 'C', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Q1', 'Q2', 'Q3', 'Q4'].indexOf(value);
+                return index >= 0 ? index * 50 : 0;
+            });
+
+            // Add the chainable methods
+            scaleFn.domain = jest.fn(() => scaleFn);
+            scaleFn.range = jest.fn(() => scaleFn);
+            scaleFn.padding = jest.fn(() => scaleFn);
+            scaleFn.bandwidth = jest.fn(() => 40); // Mock bandwidth for bar charts
+
+            return scaleFn;
+        }),
+        scaleBand: jest.fn(() => {
+            // Create a scale function that can be called with values
+            const scaleFn = jest.fn((value: string) => {
+                // Mock implementation: return a simple position based on value
+                const index = ['A', 'B', 'C', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Q1', 'Q2', 'Q3', 'Q4'].indexOf(value);
+                return index >= 0 ? index * 50 : 0;
+            });
+
+            // Add the chainable methods
+            scaleFn.domain = jest.fn(() => scaleFn);
+            scaleFn.range = jest.fn(() => scaleFn);
+            scaleFn.padding = jest.fn(() => scaleFn);
+            scaleFn.bandwidth = jest.fn(() => 40); // Mock bandwidth for bar charts
 
             return scaleFn;
         }),
@@ -178,7 +210,21 @@ jest.mock('d3', () => {
 
             return scaleFn;
         }),
-        scaleOrdinal: jest.fn(() => jest.fn((i: string) => `#color${i}`)),
+        scaleOrdinal: jest.fn(() => {
+            // Create a scale function that can be called with values
+            const scaleFn = jest.fn((value: string) => {
+                // Mock implementation: return a color based on index
+                const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'];
+                const index = parseInt(value) || 0;
+                return colors[index % colors.length];
+            });
+
+            // Add the chainable methods
+            scaleFn.domain = jest.fn(() => scaleFn);
+            scaleFn.range = jest.fn(() => scaleFn);
+
+            return scaleFn;
+        }),
         line: mockLineBuilder,
         pie: jest.fn(() => {
             const pieFn = jest.fn((data: any[]) =>
