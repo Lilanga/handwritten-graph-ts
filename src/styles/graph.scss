@@ -82,6 +82,33 @@
             opacity: 0;
         }
 
+        // Bar chart specific styles
+        .bar-group {
+            cursor: pointer;
+
+            .bar {
+                transition: opacity 0.2s ease;
+
+                &:hover {
+                    opacity: 0.8;
+                }
+
+                rect,
+                path {
+                    stroke-linecap: round;
+                    stroke-linejoin: round;
+                }
+            }
+        }
+
+        // Used in barchart value labels
+        .bar text {
+            pointer-events: none;
+            font-size: 12px;
+            alignment-baseline: middle;
+            dominant-baseline: central;
+        }
+
         // Pie chart specific styles
         .arc {
             cursor: pointer;
