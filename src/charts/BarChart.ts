@@ -128,8 +128,14 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
 
         // Setting up color scale for datasets
         // We are using d3.schemeCategory10 for consistent coloring across datasets
-        this.colorScale = d3.scaleOrdinal(d3.schemeCategory10)
-            .domain(this.data.datasets.map((_, i) => i.toString()));
+        if (this.data.datasets && this.data.datasets.length > 0) {
+            this.colorScale = d3.scaleOrdinal(d3.schemeCategory10)
+                .domain(this.data.datasets.map((_, i) => i.toString()));
+        } else {
+            // Fallback color scale for when there are no datasets
+            this.colorScale = d3.scaleOrdinal(d3.schemeCategory10)
+                .domain(['0']);
+        }
     }
 
     protected render(): void {
@@ -201,14 +207,12 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
                 .attr('stroke-dasharray', this.config.handDrawnEffect ? '5,3' : 'none');
         }
     }
-
-    // we need to render the axes based on the orientation of the chart
     private renderAxes(): void {
         if (!this.xScale || !this.yScale || !this.svg) return;
 
         if (this.config.orientation === 'horizontal') {
-            const xAxis = d3.axisBottom(this.xScale as unknown as d3.AxisScale<d3.NumberValue>);
-            const yAxis = d3.axisLeft(this.yScale as unknown as d3.AxisScale<string>);
+            const xAxis = d3.axisBottom(this.xScale as unknown as d3.ScaleLinear<number, number>);
+            const yAxis = d3.axisLeft(this.yScale as unknown as d3.ScaleBand<string>);
 
             this.svg.append('g')
                 .attr('class', 'x axis hand-drawn-axis')
@@ -223,8 +227,8 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
                 .selectAll('text')
                 .style('font-family', this.config.fontFamily);
         } else {
-            const xAxis = d3.axisBottom(this.xScale as d3.AxisScale<string>);
-            const yAxis = d3.axisLeft(this.yScale as d3.AxisScale<d3.NumberValue>);
+            const xAxis = d3.axisBottom(this.xScale as d3.ScaleBand<string>);
+            const yAxis = d3.axisLeft(this.yScale as d3.ScaleLinear<number, number>);
 
             this.svg.append('g')
                 .attr('class', 'x axis hand-drawn-axis')
@@ -302,9 +306,9 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
 
             if (typeof value !== 'number' || isNaN(value)) return;
 
-            const x = (this.xScale!(barData.label) || 0) + barOffset;
-            const y = this.yScale!(Math.max(0, value));
-            const height = this.yScale!(0) - this.yScale!(Math.abs(value));
+            const x = ((this.xScale as d3.ScaleBand<string>)(barData.label) || 0) + barOffset;
+            const y = (this.yScale as d3.ScaleLinear<number, number>)(Math.max(0, value));
+            const height = (this.yScale as d3.ScaleLinear<number, number>)(0) - (this.yScale as d3.ScaleLinear<number, number>)(Math.abs(value));
             const width = barWidth * (1 - this.config.barSpacing);
 
             if (this.config.handDrawnEffect) {
