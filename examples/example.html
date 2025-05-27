@@ -57,6 +57,21 @@
       </div>
 
       <div class="chart-container">
+        <h2>Bar Chart Example</h2>
+        <div id="bar-chart"></div>
+      </div>
+
+      <div class="chart-container">
+        <h2>Horizontal Bar Chart Example</h2>
+        <div id="horizontal-bar-chart"></div>
+      </div>
+
+      <div class="chart-container">
+        <h2>Multi-Dataset Bar Chart</h2>
+        <div id="multi-bar-chart"></div>
+      </div>
+
+      <div class="chart-container">
         <h2>Pie Chart Example</h2>
         <div id="pie-chart"></div>
       </div>
@@ -64,6 +79,7 @@
       <div class="chart-container">
         <h2>Factory Function Examples (Legacy API)</h2>
         <div id="factory-line-chart"></div>
+        <div id="factory-bar-chart" style="margin-top: 20px"></div>
         <div id="factory-pie-chart" style="margin-top: 20px"></div>
       </div>
     </div>
@@ -116,6 +132,93 @@
             console.error("LineChart class not found in HandwrittenGraph");
           }
 
+          // Bar Chart Example using Class API
+          const barData = {
+            labels: ["Q1", "Q2", "Q3", "Q4"],
+            datasets: [
+              {
+                label: "Sales",
+                data: [120, 190, 300, 500],
+                barColor: "rgb(54, 162, 235)",
+                borderColor: "rgb(53, 162, 231)",
+              },
+            ],
+          };
+
+          console.log("Creating bar chart with data:", barData);
+
+          if (HandwrittenGraph.BarChart) {
+            const barChart = new HandwrittenGraph.BarChart(
+              "#bar-chart",
+              barData,
+              {
+                width: 800,
+                height: 400,
+                handDrawnEffect: true,
+                showValues: true,
+              }
+            );
+            console.log("Bar chart created successfully");
+          } else {
+            console.error("BarChart class not found in HandwrittenGraph");
+          }
+
+          // Horizontal Bar Chart Example
+          if (HandwrittenGraph.BarChart) {
+            const horizontalBarChart = new HandwrittenGraph.BarChart(
+              "#horizontal-bar-chart",
+              barData,
+              {
+                width: 800,
+                height: 400,
+                handDrawnEffect: true,
+                orientation: "horizontal",
+                showValues: true,
+              }
+            );
+            console.log("Horizontal bar chart created successfully");
+          }
+
+          // Multi-Dataset Bar Chart Example
+          const multiBarData = {
+            labels: ["Q1", "Q2", "Q3", "Q4"],
+            datasets: [
+              {
+                label: "Sales",
+                data: [120, 190, 300, 500],
+                barColor: "rgb(54, 162, 235)",
+                borderColor: "rgb(53, 162, 231)",
+              },
+              {
+                label: "Profit",
+                data: [80, 120, 200, 350],
+                barColor: "rgb(255, 205, 86)",
+                borderColor: "rgb(255, 205, 86)",
+              },
+              {
+                label: "Expenses",
+                data: [40, 70, 100, 150],
+                barColor: "rgb(255, 99, 132)",
+                borderColor: "rgb(255, 99, 132)",
+              },
+            ],
+          };
+
+          if (HandwrittenGraph.BarChart) {
+            const multiBarChart = new HandwrittenGraph.BarChart(
+              "#multi-bar-chart",
+              multiBarData,
+              {
+                width: 800,
+                height: 400,
+                handDrawnEffect: true,
+                legendBorder: true,
+                showValues: false,
+              }
+            );
+            console.log("Multi-dataset bar chart created successfully");
+          }
+
           // Pie Chart Example using Class API
           const pieData = [
             { label: "Marketing", value: 30, color: "#FF6384" },
@@ -154,6 +257,22 @@
             console.log("Factory line chart created successfully");
           } else {
             console.error("createGraph function not found");
+          }
+
+          if (HandwrittenGraph.createBarChart) {
+            const barCleanup = HandwrittenGraph.createBarChart(
+              "#factory-bar-chart",
+              barData,
+              {
+                width: 600,
+                height: 300,
+                handDrawnEffect: true,
+                orientation: "horizontal",
+              }
+            );
+            console.log("Factory bar chart created successfully");
+          } else {
+            console.error("createBarChart function not found");
           }
 
           if (HandwrittenGraph.createPieChart) {
