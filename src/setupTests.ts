@@ -105,7 +105,7 @@ jest.mock('d3', () => {
             selectAll: jest.fn((selector: string) => {
                 // For selectAll, we need to return a selection that can handle data binding
                 return {
-                    data: jest.fn(() => ({
+                    data: jest.fn((dataArray: any[]) => ({
                         enter: jest.fn(() => ({
                             append: jest.fn((tagName: string) => createMockSelection()),
                         })),
@@ -115,9 +115,24 @@ jest.mock('d3', () => {
                     style: jest.fn().mockReturnThis(),
                     on: jest.fn().mockReturnThis(),
                     filter: jest.fn().mockReturnThis(),
+                    each: jest.fn((callback: Function) => {
+                        // Mock implementation of .each() - call the callback for each item
+                        const mockData = [
+                            { label: 'A', value: 10, datasetIndex: 0 },
+                            { label: 'B', value: 20, datasetIndex: 0 },
+                            { label: 'C', value: 30, datasetIndex: 0 }
+                        ];
+                        mockData.forEach((d, i) => {
+                            const mockNode = document.createElement('g');
+                            callback.call(mockNode, d, i, [mockNode]);
+                        });
+                        return selection;
+                    }),
+                    transition: jest.fn().mockReturnThis(),
+                    duration: jest.fn().mockReturnThis(),
                 };
             }),
-            data: jest.fn(() => ({
+            data: jest.fn((dataArray: any[]) => ({
                 enter: jest.fn(() => ({
                     append: jest.fn((tagName: string) => createMockSelection()),
                 })),
@@ -133,6 +148,14 @@ jest.mock('d3', () => {
             call: jest.fn(() => selection),
             filter: jest.fn(() => selection),
             datum: jest.fn(() => selection),
+            each: jest.fn((callback: Function) => {
+                // Mock implementation of .each() for single selections
+                if (element) {
+                    const mockData = { label: 'Test', value: 10, datasetIndex: 0 };
+                    callback.call(element, mockData, 0, [element]);
+                }
+                return selection;
+            }),
             node: jest.fn(() => element || null),
             empty: jest.fn(() => !element),
             size: jest.fn(() => element ? 1 : 0),
@@ -146,8 +169,30 @@ jest.mock('d3', () => {
             return createMockSelection(element || undefined);
         }),
         selectAll: jest.fn((selector: string) => {
-            const elements = document.querySelectorAll(selector);
-            return createMockSelection(elements[0] || undefined);
+            // Return a mock selection that supports .transition() and other methods
+            return {
+                transition: jest.fn(() => ({
+                    duration: jest.fn(() => ({
+                        style: jest.fn().mockReturnThis()
+                    }))
+                })),
+                style: jest.fn().mockReturnThis(),
+                attr: jest.fn().mockReturnThis(),
+                on: jest.fn().mockReturnThis(),
+                filter: jest.fn().mockReturnThis(),
+                each: jest.fn((callback: Function) => {
+                    // Mock some elements for testing
+                    const mockElements = [
+                        document.createElement('g'),
+                        document.createElement('g'),
+                        document.createElement('g')
+                    ];
+                    mockElements.forEach((el, i) => {
+                        const mockData = { label: `Item ${i}`, value: i * 10 };
+                        callback.call(el, mockData, i, mockElements);
+                    });
+                }),
+            };
         }),
         scalePoint: jest.fn(() => {
             // Create a scale function that can be called with values
