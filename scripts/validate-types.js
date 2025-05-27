@@ -49,10 +49,13 @@ const indexDtsContent = fs.readFileSync(indexDtsPath, 'utf8');
 
 // Checking for chart exports in index.d.ts
 console.log('🔍 Validating exports in index.d.ts...');
+
 const requiredExports = [
     'LineChart',
+    'BarChart',
     'PieChart',
     'createGraph',
+    'createBarChart',
     'createPieChart'
 ];
 

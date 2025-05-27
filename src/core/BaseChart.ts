@@ -4,7 +4,7 @@ import { BaseChartConfig, ChartMargin } from '../types';
 // Abstract chart class for creating hand-drawn style charts.
 export abstract class BaseChart<TData, TConfig extends BaseChartConfig> {
     protected config!: Required<TConfig>;
-    protected container!: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    protected container!: d3.Selection<HTMLDivElement, unknown, HTMLElement, undefined>;
     protected svg!: d3.Selection<SVGGElement, unknown, null, undefined>;
     protected defs!: d3.Selection<SVGDefsElement, unknown, null, undefined>;
     protected data!: TData;
