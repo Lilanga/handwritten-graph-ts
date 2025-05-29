@@ -3,6 +3,7 @@ import { BaseChart } from '../core/BaseChart';
 import { BarChartData, BarChartConfig, TooltipItem, BarDataset } from '../types';
 import { Tooltip } from '../components/Tooltip';
 import { HandDrawnUtils } from '../utils/handDrawnUtils';
+import { ScribbleFillUtils } from '../utils/scribbleFillUtils';
 
 // default bar chart configurations
 const DEFAULT_BAR_CONFIG: Required<BarChartConfig> = {
@@ -29,7 +30,9 @@ const DEFAULT_BAR_CONFIG: Required<BarChartConfig> = {
     barSpacing: 0.1,
     groupSpacing: 0.2,
     showValues: false,
-    orientation: 'vertical'
+    orientation: 'vertical',
+    useScribbleFill: false,
+    fillStyle: 'directional'
 };
 
 // BarChart class extending BaseChart to inherit common chart functionality
@@ -157,8 +160,11 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
         this.createXkcdFilter();
         this.renderGrid();
         this.renderAxes();
-        this.renderBars();
-        this.renderLegend();
+
+        // Create fill patterns if scribble fill is enabled
+        const fillPatterns = this.createFillPatterns();
+        this.renderBars(fillPatterns);
+        this.renderLegend(fillPatterns);
         this.setupInteractions();
     }
 
@@ -172,6 +178,34 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
                 .style('font-size', '16px')
                 .style('fill', '#666')
                 .text('No data to display');
+        }
+    }
+
+    // Create fill patterns based on the configuration and processed data
+    private createFillPatterns(): string[] {
+        if (!this.config.useScribbleFill || !this.data.datasets || this.data.datasets.length === 0 || !this.defs) {
+            return [];
+        }
+
+        // Get colors from datasets or use color scale
+        const colors = this.data.datasets.map((dataset, index) =>
+            dataset.barColor || this.colorScale!(index.toString())
+        ).filter((color): color is string => typeof color === 'string' && color.length > 0);
+
+        if (colors.length === 0) {
+            console.warn('No valid colors found for fill patterns');
+            return [];
+        }
+
+        try {
+            if (this.config.fillStyle === 'oilpaint') {
+                return ScribbleFillUtils.createOilPaintPatternSet(this.defs, colors);
+            } else {
+                return ScribbleFillUtils.createScribblePatternSet(this.defs, colors);
+            }
+        } catch (error) {
+            console.warn('Error creating fill patterns:', error);
+            return [];
         }
     }
 
@@ -207,6 +241,7 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
                 .attr('stroke-dasharray', this.config.handDrawnEffect ? '5,3' : 'none');
         }
     }
+
     private renderAxes(): void {
         if (!this.xScale || !this.yScale || !this.svg) return;
 
@@ -257,7 +292,7 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
     }
 
     // Here we render the bars based on the orientation of the chart
-    private renderBars(): void {
+    private renderBars(fillPatterns: string[] = []): void {
         if (!this.xScale || !this.yScale || !this.svg) return;
 
         const barGroups = this.svg.selectAll('.bar-group')
@@ -272,6 +307,9 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
             const barColor = dataset.barColor || this.colorScale!(datasetIndex.toString());
             const borderColor = dataset.borderColor || this.config.borderColor;
             const borderWidth = dataset.borderWidth || this.config.borderWidth;
+            const fillPattern = this.config.useScribbleFill && fillPatterns.length > 0
+                ? fillPatterns[datasetIndex % fillPatterns.length]
+                : barColor;
 
             const bars = barGroups.selectAll(`.bar-${datasetIndex}`)
                 .data((d, i) => [{ label: d, value: dataset.data[i], datasetIndex }])
@@ -280,9 +318,9 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
                 .attr('class', `bar bar-${datasetIndex}`);
 
             if (this.config.orientation === 'horizontal') {
-                this.renderHorizontalBars(bars, dataset, datasetIndex, barColor, borderColor, borderWidth);
+                this.renderHorizontalBars(bars, dataset, datasetIndex, fillPattern, borderColor, borderWidth);
             } else {
-                this.renderVerticalBars(bars, dataset, datasetIndex, barColor, borderColor, borderWidth);
+                this.renderVerticalBars(bars, dataset, datasetIndex, fillPattern, borderColor, borderWidth);
             }
         });
     }
@@ -292,7 +330,7 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
         bars: d3.Selection<SVGGElement, { label: string; value: number; datasetIndex: number; }, SVGGElement, string>,
         dataset: BarDataset,
         datasetIndex: number,
-        barColor: string,
+        fillPattern: string,
         borderColor: string,
         borderWidth: number
     ): void {
@@ -318,7 +356,7 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
 
                 element.append('path')
                     .attr('d', path)
-                    .attr('fill', barColor)
+                    .attr('fill', fillPattern)
                     .attr('stroke', borderColor)
                     .attr('stroke-width', borderWidth)
                     .attr('stroke-linecap', this.config.strokeLinecap)
@@ -330,7 +368,7 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
                     .attr('y', y)
                     .attr('width', width)
                     .attr('height', height)
-                    .attr('fill', barColor)
+                    .attr('fill', fillPattern)
                     .attr('stroke', borderColor)
                     .attr('stroke-width', borderWidth);
             }
@@ -347,8 +385,9 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
                     .text(this.config.valueFormat(value));
             }
 
-            // Store data for interactions
-            element.datum({ label: barData.label, value, dataset: dataset.label, color: barColor });
+            // Store data for interactions - use original color for tooltip
+            const originalColor = dataset.barColor || this.colorScale!(datasetIndex.toString());
+            element.datum({ label: barData.label, value, dataset: dataset.label, color: originalColor });
         });
     }
 
@@ -357,7 +396,7 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
         bars: d3.Selection<SVGGElement, { label: string; value: number; datasetIndex: number; }, SVGGElement, string>,
         dataset: BarDataset,
         datasetIndex: number,
-        barColor: string,
+        fillPattern: string,
         borderColor: string,
         borderWidth: number
     ): void {
@@ -383,7 +422,7 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
 
                 element.append('path')
                     .attr('d', path)
-                    .attr('fill', barColor)
+                    .attr('fill', fillPattern)
                     .attr('stroke', borderColor)
                     .attr('stroke-width', borderWidth)
                     .attr('stroke-linecap', this.config.strokeLinecap)
@@ -395,7 +434,7 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
                     .attr('y', y)
                     .attr('width', width)
                     .attr('height', height)
-                    .attr('fill', barColor)
+                    .attr('fill', fillPattern)
                     .attr('stroke', borderColor)
                     .attr('stroke-width', borderWidth);
             }
@@ -413,13 +452,14 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
                     .text(this.config.valueFormat(value));
             }
 
-            // Store data for interactions
-            element.datum({ label: barData.label, value, dataset: dataset.label, color: barColor });
+            // Store data for interactions - use original color for tooltip
+            const originalColor = dataset.barColor || this.colorScale!(datasetIndex.toString());
+            element.datum({ label: barData.label, value, dataset: dataset.label, color: originalColor });
         });
     }
 
-    // Create the legend for the bar charts
-    private renderLegend(): void {
+    // Create the legend for the bar charts using the fill patterns or colors
+    private renderLegend(fillPatterns: string[] = []): void {
         if (!this.data.datasets || this.data.datasets.length <= 1 || !this.svg) return;
 
         const legendGroup = this.svg.append('g')
@@ -441,6 +481,9 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
 
         this.data.datasets.forEach((dataset, index) => {
             const barColor = dataset.barColor || this.colorScale!(index.toString());
+            const fillPattern = this.config.useScribbleFill && fillPatterns.length > 0
+                ? fillPatterns[index % fillPatterns.length]
+                : barColor;
 
             legendGroup.append('rect')
                 .attr('x', this.config.handDrawnEffect ? (Math.random() - 0.5) * 2 : 0)
@@ -449,7 +492,7 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
                 .attr('height', 8)
                 .attr('rx', 2)
                 .attr('ry', 2)
-                .attr('fill', barColor)
+                .attr('fill', fillPattern)
                 .attr('filter', this.config.handDrawnEffect ? 'url(#xkcdify)' : null);
 
             legendGroup.append('text')

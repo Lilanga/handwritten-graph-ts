@@ -3,6 +3,7 @@ import { BaseChart } from '../core/BaseChart';
 import { LineChartData, LineChartConfig, TooltipItem } from '../types';
 import { Tooltip } from '../components/Tooltip';
 import { HandDrawnUtils } from '../utils/handDrawnUtils';
+import { ScribbleFillUtils } from '../utils/scribbleFillUtils';
 
 // Default configuration settings for the LineChart
 const DEFAULT_LINE_CONFIG: Required<LineChartConfig> = {
@@ -25,7 +26,10 @@ const DEFAULT_LINE_CONFIG: Required<LineChartConfig> = {
     tooltipBorderRadius: 5,
     tooltipOpacity: 0.9,
     legendBorder: false,
-    valueFormat: (d: number) => d3.format('.1f')(d)
+    valueFormat: (d: number) => d3.format('.1f')(d),
+    showArea: false,
+    useScribbleFill: false,
+    fillStyle: 'directional'
 };
 
 // This is the main class for the LineChart, extending the BaseChart class.
@@ -149,9 +153,18 @@ export class LineChart extends BaseChart<LineChartData, LineChartConfig> {
         this.createXkcdFilter();
         this.renderGrid();
         this.renderAxes();
+
+        // Create fill patterns if scribble fill is enabled
+        const fillPatterns = this.createFillPatterns();
+
+        // Render area if enabled
+        if (this.config.showArea) {
+            this.renderAreas(fillPatterns);
+        }
+
         this.renderLines();
-        this.renderPoints();
-        this.renderLegend();
+        this.renderPoints(fillPatterns);
+        this.renderLegend(fillPatterns);
         this.setupInteractions();
     }
 
@@ -165,6 +178,34 @@ export class LineChart extends BaseChart<LineChartData, LineChartConfig> {
                 .style('font-size', '16px')
                 .style('fill', '#666')
                 .text('No data to display');
+        }
+    }
+
+    // Create fill patterns based on the configuration and processed data
+    private createFillPatterns(): string[] {
+        if (!this.config.useScribbleFill || !this.data.datasets || this.data.datasets.length === 0 || !this.defs) {
+            return [];
+        }
+
+        // Get colors from datasets or use default line color
+        const colors = this.data.datasets.map(dataset =>
+            dataset.lineColor || this.config.lineColor
+        ).filter((color): color is string => typeof color === 'string' && color.length > 0);
+
+        if (colors.length === 0) {
+            console.warn('No valid colors found for fill patterns');
+            return [];
+        }
+
+        try {
+            if (this.config.fillStyle === 'oilpaint') {
+                return ScribbleFillUtils.createOilPaintPatternSet(this.defs, colors);
+            } else {
+                return ScribbleFillUtils.createScribblePatternSet(this.defs, colors);
+            }
+        } catch (error) {
+            console.warn('Error creating fill patterns:', error);
+            return [];
         }
     }
 
@@ -230,6 +271,52 @@ export class LineChart extends BaseChart<LineChartData, LineChartConfig> {
         }
     }
 
+    // Render Line charts as area charts using optional scribble fill flags
+    private renderAreas(fillPatterns: string[] = []): void {
+        if (!this.xScale || !this.yScale || !this.svg) return;
+
+        this.data.datasets.forEach((dataset, index) => {
+            if (!dataset.data || dataset.data.length === 0) return;
+
+            const lineColor = dataset.lineColor || this.config.lineColor;
+            const fillPattern = this.config.useScribbleFill && fillPatterns.length > 0
+                ? fillPatterns[index % fillPatterns.length]
+                : lineColor;
+
+            const area = d3.area<number>()
+                .x((_, i) => {
+                    const label = this.data.labels[i];
+                    return this.xScale!(label) || 0;
+                })
+                .y0(this.yScale!(0))
+                .y1(d => this.yScale!(d))
+                .curve(d3.curveMonotoneX)
+                .defined(d => d != null && !isNaN(d));
+
+            const areaString = area(dataset.data);
+            if (!areaString) return;
+
+            const areaElement = this.svg.append('path')
+                .datum(dataset.data)
+                .attr('class', 'area')
+                .attr('fill', fillPattern)
+                .attr('fill-opacity', 0.3)
+                .attr('stroke', 'none');
+
+            if (this.config.handDrawnEffect) {
+                const handDrawnArea = HandDrawnUtils.addHandDrawnEffect(
+                    areaString,
+                    this.config.handDrawnJitter / 2,
+                    this.config.handDrawnPoints
+                );
+
+                areaElement.attr('d', handDrawnArea);
+            } else {
+                areaElement.attr('d', areaString);
+            }
+        });
+    }
+
     // Render lines for each dataset
     private renderLines(): void {
         if (!this.xScale || !this.yScale || !this.svg) return;
@@ -275,14 +362,17 @@ export class LineChart extends BaseChart<LineChartData, LineChartConfig> {
         });
     }
 
-    // Render points for each dataset
-    private renderPoints(): void {
+    // Render points for each dataset with optional scribble fill
+    private renderPoints(fillPatterns: string[] = []): void {
         if (!this.xScale || !this.yScale || !this.svg) return;
 
         this.data.datasets.forEach((dataset, index) => {
             if (!dataset.data || dataset.data.length === 0) return;
 
             const lineColor = dataset.lineColor || this.config.lineColor;
+            const fillPattern = this.config.useScribbleFill && fillPatterns.length > 0
+                ? fillPatterns[index % fillPatterns.length]
+                : lineColor;
 
             this.svg.selectAll(`.dot-${index}`)
                 .data(dataset.data.filter(d => d != null && !isNaN(d)))
@@ -302,11 +392,13 @@ export class LineChart extends BaseChart<LineChartData, LineChartConfig> {
                         : baseY;
                 })
                 .attr('r', this.config.pointRadius)
-                .attr('fill', lineColor);
+                .attr('fill', fillPattern)
+                .attr('stroke', lineColor)
+                .attr('stroke-width', 2);
         });
     }
 
-    private renderLegend(): void {
+    private renderLegend(fillPatterns: string[] = []): void {
         if (!this.data.datasets || this.data.datasets.length === 0 || !this.svg) return;
 
         const legendGroup = this.svg.append('g')
@@ -328,6 +420,9 @@ export class LineChart extends BaseChart<LineChartData, LineChartConfig> {
 
         this.data.datasets.forEach((dataset, index) => {
             const lineColor = dataset.lineColor || this.config.lineColor;
+            const fillPattern = this.config.useScribbleFill && fillPatterns.length > 0
+                ? fillPatterns[index % fillPatterns.length]
+                : lineColor;
 
             legendGroup.append('rect')
                 .attr('x', this.config.handDrawnEffect ? (Math.random() - 0.5) * 2 : 0)
@@ -336,7 +431,7 @@ export class LineChart extends BaseChart<LineChartData, LineChartConfig> {
                 .attr('height', 8)
                 .attr('rx', 2)
                 .attr('ry', 2)
-                .attr('fill', lineColor)
+                .attr('fill', fillPattern)
                 .attr('filter', this.config.handDrawnEffect ? 'url(#xkcdify)' : null);
 
             legendGroup.append('text')
@@ -468,10 +563,18 @@ export class LineChart extends BaseChart<LineChartData, LineChartConfig> {
             this.tooltip.hide();
         }
 
+        // animate points back to normal size to add a nice effect
         if (this.svg) {
             this.svg.selectAll('.dot')
                 .attr('r', this.config.pointRadius)
-                .attr('stroke', 'none');
+                .attr('stroke', (d, i, nodes) => {
+                    const element = nodes[i] as SVGCircleElement;
+                    const classList = element.getAttribute('class') || '';
+                    const datasetIndex = classList.match(/dot-(\d+)/)?.[1] || '0';
+                    const dataset = this.data.datasets[parseInt(datasetIndex)];
+                    return dataset?.lineColor || this.config.lineColor;
+                })
+                .attr('stroke-width', 2);
         }
 
         if (this.hoverLine) {
