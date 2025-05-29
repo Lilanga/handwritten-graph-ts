@@ -224,7 +224,14 @@ export class PieChart extends BaseChart<PieChartData, PieChartConfig> {
                     return d.data.color || '#666'; // Provide fallback color
                 }
             })
-            .attr('stroke', 'white')
+            .attr('stroke', (d, i) => {
+                // Use the same fill as the border for seamless appearance
+                if (this.config.useScribbleFill && fillPatterns.length > 0) {
+                    return fillPatterns[i % fillPatterns.length];
+                } else {
+                    return d.data.color || '#666';
+                }
+            })
             .attr('stroke-width', 1)
             .attr('stroke-linecap', this.config.strokeLinecap)
             .attr('stroke-linejoin', this.config.strokeLinejoin)
