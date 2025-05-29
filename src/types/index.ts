@@ -70,6 +70,8 @@ export interface BaseChartConfig {
     tooltipBorderWidth?: number;
     tooltipBorderRadius?: number;
     tooltipOpacity?: number;
+    useScribbleFill?: boolean;
+    fillStyle?: 'directional' | 'oilpaint';
 }
 
 // Line Chart Configuration
@@ -80,6 +82,7 @@ export interface LineChartConfig extends BaseChartConfig {
     handDrawnPoints?: number;
     legendBorder?: boolean;
     valueFormat?: (value: number) => string;
+    showArea?: boolean;
 }
 
 // Bar Chart Configuration
@@ -103,8 +106,6 @@ export interface PieChartConfig extends BaseChartConfig {
     cornerRadius?: number;
     legendBorder?: boolean;
     valueFormat?: (value: number) => string;
-    useScribbleFill?: boolean;
-    fillStyle?: 'directional' | 'oilpaint';
 }
 
 // Chart Classes (these will be the actual exported classes)
