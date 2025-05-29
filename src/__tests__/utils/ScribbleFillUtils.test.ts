@@ -11,7 +11,11 @@ describe('ScribbleFillUtils', () => {
             attr: jest.fn().mockReturnThis(),
             selectAll: jest.fn().mockReturnThis(),
             data: jest.fn().mockReturnThis(),
-            enter: jest.fn().mockReturnThis()
+            enter: jest.fn().mockReturnThis(),
+            select: jest.fn(() => ({
+                remove: jest.fn(),
+                empty: jest.fn(() => true) // Return true to indicate the selection is empty (filter doesn't exist)
+            }))
         };
     });
 
@@ -28,6 +32,7 @@ describe('ScribbleFillUtils', () => {
 
         expect(result).toBe('url(#test-pattern)');
         expect(mockDefs.append).toHaveBeenCalledWith('pattern');
+        expect(mockDefs.select).toHaveBeenCalled();
     });
 
     test('should create scribble pattern set', () => {

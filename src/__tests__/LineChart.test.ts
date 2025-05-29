@@ -3,6 +3,7 @@ import { LineChartData, LineChartConfig } from '../types';
 
 describe('LineChart', () => {
     let container: HTMLDivElement;
+    let chart: LineChart;
 
     beforeEach(() => {
         container = document.createElement('div');
@@ -11,7 +12,18 @@ describe('LineChart', () => {
     });
 
     afterEach(() => {
-        document.body.removeChild(container);
+        // Destroy chart if it exists
+        if (chart) {
+            chart.destroy();
+        }
+
+        // Clean up DOM
+        if (container && container.parentNode) {
+            container.parentNode.removeChild(container);
+        }
+
+        // Clear any remaining timers
+        jest.clearAllTimers();
     });
 
     const mockData: LineChartData = {
@@ -31,7 +43,7 @@ describe('LineChart', () => {
     };
 
     test('should create a line chart with default configuration', () => {
-        const chart = new LineChart('#test-container', mockData);
+        chart = new LineChart('#test-container', mockData);
 
         expect(container.querySelector('.handwritten-graph-container')).toBeTruthy();
         expect(container.querySelector('svg')).toBeTruthy();
@@ -45,7 +57,7 @@ describe('LineChart', () => {
             lineColor: 'blue'
         };
 
-        const chart = new LineChart('#test-container', mockData, config);
+        chart = new LineChart('#test-container', mockData, config);
 
         const svg = container.querySelector('svg');
         expect(svg).toBeTruthy();
@@ -60,17 +72,20 @@ describe('LineChart', () => {
         };
 
         expect(() => {
-            new LineChart('#test-container', emptyData);
+            chart = new LineChart('#test-container', emptyData);
         }).not.toThrow();
     });
 
     test('should destroy chart properly', () => {
-        const chart = new LineChart('#test-container', mockData);
+        chart = new LineChart('#test-container', mockData);
 
         expect(container.querySelector('.handwritten-graph-container')).toBeTruthy();
 
         chart.destroy();
 
         expect(container.querySelector('.handwritten-graph-container')).toBeFalsy();
+
+        // Set to undefined since we manually destroyed it
+        chart = undefined as any;
     });
 });

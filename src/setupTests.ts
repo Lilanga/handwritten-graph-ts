@@ -42,6 +42,42 @@ document.createElementNS = jest.fn((_namespace: string, tagName: string) => {
     return element as any;
 });
 
+// Global cleanup after each test
+afterEach(() => {
+    // Clear any timers that might be running
+    jest.clearAllTimers();
+
+    // Clear the document body to remove any leftover DOM elements
+    document.body.innerHTML = '';
+
+    // Clear any remaining event listeners
+    const originalRemoveEventListener = EventTarget.prototype.removeEventListener;
+    EventTarget.prototype.removeEventListener = originalRemoveEventListener;
+
+    // Force garbage collection if available (for Node.js environments)
+    if (global.gc) {
+        global.gc();
+    }
+});
+
+// Global cleanup before each test
+beforeEach(() => {
+    // Use fake timers to control timing in tests
+    jest.useFakeTimers();
+});
+
+// Global cleanup after all tests
+afterAll(() => {
+    // Clean up fake timers
+    jest.useRealTimers();
+
+    // Clear all mocks
+    jest.clearAllMocks();
+
+    // Reset all modules
+    jest.resetModules();
+});
+
 // Mock D3 for testing
 jest.mock('d3', () => {
     // Create a mock line builder
@@ -173,7 +209,8 @@ jest.mock('d3', () => {
             return {
                 transition: jest.fn(() => ({
                     duration: jest.fn(() => ({
-                        style: jest.fn().mockReturnThis()
+                        style: jest.fn().mockReturnThis(),
+                        attr: jest.fn().mockReturnThis()
                     }))
                 })),
                 style: jest.fn().mockReturnThis(),
@@ -225,22 +262,6 @@ jest.mock('d3', () => {
 
             return scaleFn;
         }),
-        scaleBand: jest.fn(() => {
-            // Create a scale function that can be called with values
-            const scaleFn = jest.fn((value: string) => {
-                // Mock implementation: return a simple position based on value
-                const index = ['A', 'B', 'C', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Q1', 'Q2', 'Q3', 'Q4'].indexOf(value);
-                return index >= 0 ? index * 50 : 0;
-            });
-
-            // Add the chainable methods
-            scaleFn.domain = jest.fn(() => scaleFn);
-            scaleFn.range = jest.fn(() => scaleFn);
-            scaleFn.padding = jest.fn(() => scaleFn);
-            scaleFn.bandwidth = jest.fn(() => 40); // Mock bandwidth for bar charts
-
-            return scaleFn;
-        }),
         scaleLinear: jest.fn(() => {
             // Create a scale function that can be called with values
             const scaleFn = jest.fn((value: number) => {
@@ -271,6 +292,15 @@ jest.mock('d3', () => {
             return scaleFn;
         }),
         line: mockLineBuilder,
+        area: jest.fn(() => {
+            const areaFn = jest.fn(() => 'M0,0L100,0L100,100L0,100Z');
+            areaFn.x = jest.fn().mockReturnThis();
+            areaFn.y0 = jest.fn().mockReturnThis();
+            areaFn.y1 = jest.fn().mockReturnThis();
+            areaFn.curve = jest.fn().mockReturnThis();
+            areaFn.defined = jest.fn().mockReturnThis();
+            return areaFn;
+        }),
         pie: jest.fn(() => {
             const pieFn = jest.fn((data: any[]) =>
                 data.map((d, i) => ({
@@ -314,5 +344,31 @@ jest.mock('d3', () => {
             return arr.reduce((sum, d) => sum + d, 0);
         }),
         schemeCategory10: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'],
+        // Add color functions for ScribbleFillUtils
+        color: jest.fn((colorString: string) => {
+            // Mock d3.color function
+            if (!colorString || typeof colorString !== 'string') return null;
+
+            // Return a mock color object
+            return {
+                r: 255,
+                g: 0,
+                b: 0,
+                opacity: 1,
+                toString: () => colorString,
+                hex: colorString,
+                rgb: () => ({ r: 255, g: 0, b: 0 })
+            };
+        }),
+        hsl: jest.fn((color: any) => {
+            // Mock d3.hsl function
+            return {
+                h: 0,
+                s: 0.5,
+                l: 0.5,
+                opacity: 1,
+                toString: () => 'hsl(0, 50%, 50%)'
+            };
+        })
     };
 });

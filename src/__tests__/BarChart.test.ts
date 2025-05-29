@@ -3,6 +3,7 @@ import { BarChartData } from '../types';
 
 describe('BarChart', () => {
     let container: HTMLElement;
+    let chart: BarChart;
 
     beforeEach(() => {
         container = document.createElement('div');
@@ -11,9 +12,18 @@ describe('BarChart', () => {
     });
 
     afterEach(() => {
-        if (container.parentNode) {
+        // Destroy chart if it exists
+        if (chart) {
+            chart.destroy();
+        }
+
+        // Clean up DOM
+        if (container && container.parentNode) {
             container.parentNode.removeChild(container);
         }
+
+        // Clear any remaining timers
+        jest.clearAllTimers();
     });
 
     const mockData: BarChartData = {
@@ -28,7 +38,7 @@ describe('BarChart', () => {
     };
 
     test('should create a bar chart with default configuration', () => {
-        const chart = new BarChart('#test-container', mockData);
+        chart = new BarChart('#test-container', mockData);
 
         expect(container.querySelector('.handwritten-graph-container')).toBeTruthy();
         expect(container.querySelector('svg')).toBeTruthy();
@@ -42,7 +52,7 @@ describe('BarChart', () => {
             showValues: true
         };
 
-        const chart = new BarChart('#test-container', mockData, config);
+        chart = new BarChart('#test-container', mockData, config);
 
         expect(container.querySelector('svg')).toBeTruthy();
     });
@@ -54,7 +64,7 @@ describe('BarChart', () => {
             height: 300
         };
 
-        const chart = new BarChart('#test-container', mockData, config);
+        chart = new BarChart('#test-container', mockData, config);
 
         expect(container.querySelector('svg')).toBeTruthy();
     });
@@ -77,7 +87,7 @@ describe('BarChart', () => {
         };
 
         expect(() => {
-            new BarChart('#test-container', multiDatasetData);
+            chart = new BarChart('#test-container', multiDatasetData);
         }).not.toThrow();
     });
 
@@ -93,18 +103,21 @@ describe('BarChart', () => {
         };
 
         expect(() => {
-            new BarChart('#test-container', dataWithoutColors);
+            chart = new BarChart('#test-container', dataWithoutColors);
         }).not.toThrow();
     });
 
     test('should destroy chart properly', () => {
-        const chart = new BarChart('#test-container', mockData);
+        chart = new BarChart('#test-container', mockData);
 
         expect(container.querySelector('.handwritten-graph-container')).toBeTruthy();
 
         chart.destroy();
 
         expect(container.querySelector('.handwritten-graph-container')).toBeFalsy();
+
+        // Set to undefined since we manually destroyed it
+        chart = undefined as any;
     });
 
     test('should handle empty data gracefully', () => {
@@ -114,7 +127,7 @@ describe('BarChart', () => {
         };
 
         expect(() => {
-            new BarChart('#test-container', emptyData);
+            chart = new BarChart('#test-container', emptyData);
         }).not.toThrow();
     });
 
@@ -125,7 +138,7 @@ describe('BarChart', () => {
         };
 
         expect(() => {
-            new BarChart('#test-container', invalidData as any);
+            chart = new BarChart('#test-container', invalidData as any);
         }).not.toThrow();
     });
 });
