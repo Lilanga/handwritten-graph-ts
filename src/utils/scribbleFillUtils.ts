@@ -1,66 +1,134 @@
 import * as d3 from 'd3';
 
-// This module provides utility functions to create various types of scribble patterns
-// and oil paint patterns for SVG graphics, simulating hand-drawn effects.
+// Utility calss for creating hand-drawn style fills using D3.js.
+// Directional scribble patterns and oil paint textures are generated with customizable parameters.
 export class ScribbleFillUtils {
     static createDirectionalScribblePattern(
         defs: d3.Selection<SVGDefsElement, unknown, null, undefined>,
         id: string,
         color: string,
-        density = 8,
-        width = 120,
-        height = 120,
-        direction = 0
+        density: number,
+        width: number,
+        height: number,
+        angle: number
     ): string {
-        const patternId = id || `scribble-${Math.random().toString(36).substr(2, 9)}`;
+        // Add noise filter for paper feel background fill of scribble patterns
+        // TODO: Move SVG filter creationg to a seperate static method and remove duplication from there.
+        const filterId = `grainy-filter-${id}`;
+        defs.select(`#${filterId}`).remove(); // clean up duplicates
 
-        const pattern = defs.append('pattern')
-            .attr('id', patternId)
-            .attr('patternUnits', 'userSpaceOnUse')
-            .attr('width', width)
-            .attr('height', height);
+        const filter = defs.append("filter")
+            .attr("id", filterId)
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", "200%")
+            .attr("height", "200%");
 
-        pattern.append('rect')
-            .attr('width', width)
-            .attr('height', height)
-            .attr('fill', color)
-            .attr('fill-opacity', 0.25);
+        // Fractal noise (base for grain)
+        filter.append('feTurbulence')
+            .attr('type', 'fractalNoise')
+            .attr("baseFrequency", 0.4) // reduced noise frequency
+            .attr("result", "noise");
 
-        this.addWatercolorTexture(pattern, width, height, color, 4);
+        // Blend subtly with the original (preserve color vibrancy)
+        const lighting = filter.append('feDiffuseLighting')
+            .attr('in', 'noise')
+            .attr('lighting-color', 'white')
+            .attr('surfaceScale', 2);
 
-        const angleRad = (direction * Math.PI) / 180;
-        const cos = Math.cos(angleRad);
-        const sin = Math.sin(angleRad);
-        const diagonalLength = Math.sqrt(width * width + height * height);
-        const center: [number, number] = [width / 2, height / 2];
-        const lineSpacing = height / (density + 1);
+        lighting.append('feDistantLight')
+            .attr('azimuth', 45)
+            .attr('elevation', 75);
 
-        for (let i = 0; i <= density; i++) {
-            const offset = i * lineSpacing - height / 2;
-            const startX = center[0] - cos * diagonalLength / 2 + sin * offset;
-            const startY = center[1] - sin * diagonalLength / 2 - cos * offset;
-            const endX = center[0] + cos * diagonalLength / 2 + sin * offset;
-            const endY = center[1] + sin * diagonalLength / 2 - cos * offset;
+        // Create element for the pattern to be used in the fill
+        const pattern = defs
+            .append("pattern")
+            .attr("id", id)
+            .attr("width", width)
+            .attr("height", height)
+            .attr("patternUnits", "userSpaceOnUse");
 
-            const path = this.generateScribblePath([startX, startY], [endX, endY]);
-            const strokeOpacity = 0.5 + Math.random() * 0.3;
-            const strokeWidth = 1 + Math.random() * 2;
-            const strokeColor = this.adjustColor(color, -15 + Math.random() * 30);
+        // Create pastel patches for the background with randomized sizes and positions
+        const patchCount = 6;
+        for (let i = 0; i < patchCount; i++) {
+            const pastel = this.toPastelColor(color, 0.08 + Math.random() * 0.015);
+            const offsetX = (Math.random() - 0.8) * width * 0.08;
+            const offsetY = (Math.random() - 0.5) * height * 0.05;
+            const w = width * (0.6 + Math.random() * 0.4);
+            const h = height * (0.7 + Math.random() * 0.3);
 
-            pattern.append('path')
-                .attr('d', path)
-                .attr('stroke', strokeColor)
-                .attr('stroke-width', strokeWidth)
-                .attr('stroke-linecap', 'round')
-                .attr('stroke-linejoin', 'round')
-                .attr('stroke-opacity', strokeOpacity)
-                .attr('fill', 'none');
+            pattern.append("rect")
+                .attr("x", offsetX)
+                .attr("y", offsetY)
+                .attr("width", w)
+                .attr("height", h)
+                .attr("fill", pastel)
+                .attr("filter", `url(#${filterId})`);
         }
 
-        return `url(#${patternId})`;
+        // Add watercolor texture to the pattern
+        this.addWatercolorTexture(pattern, width, height, color, 4);
+
+        // Create the scribble lines with given angle and density
+        const group = pattern
+            .append("g")
+            .attr("transform", `rotate(${angle}, ${width / 2}, ${height / 2})`);
+
+        const spacing = width / density;
+        for (let i = -width; i < width * 2; i += spacing) {
+            const path = this.generateWavyLine(i, 0, i, height);
+            group
+                .append("path")
+                .attr("d", path)
+                .attr("stroke", color)
+                .attr("stroke-width", 1 + Math.random())
+                .attr("stroke-opacity", 0.8 + Math.random() * 0.2)
+                .attr("fill", "none");
+        }
+
+        // Apply blur filter to add a soft watercolor effect
+        this.ensureWatercolorBlurFilter(defs);
+
+        return `url(#${id})`;
     }
 
-    // Creates a set of scribble patterns with different colors and directions.
+    // Generates a wavy line path string between two points.
+    static generateWavyLine(x1: number, y1: number, x2: number, y2: number): string {
+        const segments = 10;
+        const dx = (x2 - x1) / segments;
+        const dy = (y2 - y1) / segments;
+        const amplitude = 1.5;
+
+        let d = `M ${x1} ${y1}`;
+        for (let i = 1; i <= segments; i++) {
+            const cx = x1 + dx * i + (Math.random() - 0.5) * amplitude;
+            const cy = y1 + dy * i + (Math.random() - 0.5) * amplitude;
+            d += ` L ${cx} ${cy}`;
+        }
+
+        return d;
+    }
+
+    // Converts a base color to a pastel color with slight variations in hue, saturation, and lightness.
+    static toPastelColor(baseColor: string, alpha: number = 0.12): string {
+        const d3Color = d3.color(baseColor);
+        if (d3Color) {
+            const hsl = d3.hsl(d3Color);
+            const hueJitter = (Math.random() - 0.5) * 6;
+            const satJitter = (Math.random() - 0.5) * 0.1;
+            const lightJitter = (Math.random() - 0.5) * 0.1;
+
+            hsl.h += hueJitter;
+            hsl.s = Math.max(0.3, Math.min(0.6, hsl.s * 0.5 + satJitter));
+            hsl.l = Math.max(0.75, Math.min(0.9, hsl.l * 1.2 + lightJitter));
+
+            return `hsla(${hsl.h}, ${hsl.s * 100}%, ${hsl.l * 100}%, ${alpha})`;
+        }
+
+        return `rgba(230, 230, 230, ${alpha})`;
+    }
+
+    // Main method to create a set of scribble patterns with different colors and directions.
     // The patterns are designed to simulate a hand-drawn effect with varying densities and angles.
     static createScribblePatternSet(
         defs: d3.Selection<SVGDefsElement, unknown, null, undefined>,
@@ -70,15 +138,15 @@ export class ScribbleFillUtils {
 
         return colors.map((color, index) => {
             const direction = directions[index % directions.length];
-            const density = 6 + Math.floor(Math.random() * 5);
+            const density = 10 + Math.floor(Math.random() * 4);
 
             return this.createDirectionalScribblePattern(
                 defs,
                 `scribble-pattern-${index}`,
                 color,
                 density,
-                120,
-                120,
+                150,
+                150,
                 direction
             );
         });
@@ -162,7 +230,7 @@ export class ScribbleFillUtils {
         return `url(#${patternId})`;
     }
 
-    // Creates a set of oil paint patterns with different colors.
+    // Main method to create a set of oil paint patterns with different colors.
     // Each pattern simulates the texture of oil paint with multiple layers of watercolor blobs.
     static createOilPaintPatternSet(
         defs: d3.Selection<SVGDefsElement, unknown, null, undefined>,
@@ -173,72 +241,78 @@ export class ScribbleFillUtils {
         });
     }
 
-    // Generates a scribble path between two points with a hand-drawn effect.
-    // The path consists of multiple points that create a wobbly line effect.
-    private static generateScribblePath(
-        start: [number, number],
-        end: [number, number]
-    ): string {
-        const dx = end[0] - start[0];
-        const dy = end[1] - start[1];
-        const length = Math.sqrt(dx * dx + dy * dy);
-        const numPoints = Math.max(10, Math.min(30, Math.floor(length / 10)));
-        const points: Array<[number, number]> = [];
-        const wobbleAmount = 2 + Math.random() * 2;
-        const perpX = -dy / length;
-        const perpY = dx / length;
-
-        points.push(start);
-
-        for (let i = 1; i < numPoints; i++) {
-            const t = i / numPoints;
-            const baseX = start[0] + dx * t;
-            const baseY = start[1] + dy * t;
-            const wobble = (Math.random() - 0.5) * wobbleAmount;
-            const speedWobble = (Math.random() - 0.5) * wobbleAmount * 0.3;
-
-            const pointX = baseX + perpX * wobble + (dx / length) * speedWobble;
-            const pointY = baseY + perpY * wobble + (dy / length) * speedWobble;
-
-            points.push([pointX, pointY]);
-        }
-
-        points.push(end);
-
-        const pathGenerator = d3.line<[number, number]>()
-            .x(d => d[0])
-            .y(d => d[1])
-            .curve(d3.curveBasis);
-
-        return pathGenerator(points) || '';
-    }
-
     // Adds watercolor texture to a pattern by creating multiple blobs with varying sizes and colors.
     private static addWatercolorTexture(
         pattern: d3.Selection<SVGPatternElement, unknown, null, undefined>,
         width: number,
         height: number,
         color: string,
-        numBlobs = 3
+        numBlobs = 5
     ): void {
         for (let i = 0; i < numBlobs; i++) {
-            const blobColor = this.adjustColor(color, -20 + Math.random() * 40, 0.1 + Math.random() * 0.2);
+            // Randomize color for natural tone variation
+            const blobColor = this.adjustColor(
+                color,
+                -20 + Math.random() * 40,    // hue shift
+                0.15 + Math.random() * 0.2    // transparency
+            );
+
             const cx = Math.random() * width;
             const cy = Math.random() * height;
-            const rx = 15 + Math.random() * 30;
-            const ry = 15 + Math.random() * 30;
+            const rx = 20 + Math.random() * 40;
+            const ry = 20 + Math.random() * 40;
 
-            const blobPath = this.createWatercolorBlob(cx, cy, rx, ry);
+            const blobPath = this.createOrganicBlob(cx, cy, rx, ry);
 
-            pattern.append('path')
-                .attr('d', blobPath)
-                .attr('fill', blobColor)
-                .attr('fill-opacity', 0.15 + Math.random() * 0.2)
-                .attr('stroke', 'none');
+            pattern.append("path")
+                .attr("d", blobPath)
+                .attr("fill", blobColor)
+                .attr("fill-opacity", 0.12 + Math.random() * 0.15)
+                .attr("stroke", "none")
+                .attr("filter", "url(#watercolor-soft-blur)");
         }
     }
 
-    // Creates a watercolor blob path string based on the center coordinates and radiuses.
+    // Helps ensure the watercolor blur filter is created only once in the SVG defs.
+    private static ensureWatercolorBlurFilter(
+        defs: d3.Selection<SVGDefsElement, unknown, null, undefined>
+    ): void {
+        if (!defs.select("#watercolor-soft-blur").empty()) return;
+
+        const filter = defs.append("filter")
+            .attr("id", "watercolor-soft-blur");
+
+        filter.append("feGaussianBlur")
+            .attr("in", "SourceGraphic")
+            .attr("stdDeviation", 4);
+    }
+
+    // Creates a naturally shaped organic blob to simulate a watercolor effects
+    private static createOrganicBlob(cx: number, cy: number, rx: number, ry: number): string {
+        const points = 8;
+        const angleStep = (Math.PI * 2) / points;
+        const path: [number, number][] = [];
+
+        for (let i = 0; i < points; i++) {
+            const angle = i * angleStep;
+            const rXVar = rx * (0.85 + Math.random() * 0.3);
+            const rYVar = ry * (0.85 + Math.random() * 0.3);
+            const x = cx + Math.cos(angle) * rXVar;
+            const y = cy + Math.sin(angle) * rYVar;
+            path.push([x, y]);
+        }
+
+        let d = `M ${path[0][0]} ${path[0][1]}`;
+        for (let i = 1; i < path.length; i++) {
+            const [x, y] = path[i];
+            d += ` Q ${path[i - 1][0]} ${path[i - 1][1]} ${x} ${y}`;
+        }
+        d += " Z";
+
+        return d;
+    }
+
+    // Creates a watercolor blob path string based on the center coordinates and radiuses
     private static createWatercolorBlob(cx: number, cy: number, rx: number, ry: number): string {
         const numPoints = 12;
         const points: Array<[number, number]> = [];
