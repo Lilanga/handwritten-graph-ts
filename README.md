@@ -2,7 +2,11 @@
 
 A modern TypeScript library for creating hand-drawn style charts inspired by comics and sketches. Built with D3.js and designed with type safety and excellent developer experience in mind.
 
-[Live Demo](https://p7wc4d.csb.app)
+## Documentation
+
+**[Complete API Documentation](https://handwritten-graph-docs.readthedocs.io/en/latest/)**
+
+[📚 Live Demo](https://p7wc4d.csb.app) | [📖 Quick Start](https://handwritten-graph-docs.readthedocs.io/en/latest/quick-start.html)
 
 ## Features
 
