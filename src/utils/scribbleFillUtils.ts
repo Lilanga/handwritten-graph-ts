@@ -67,6 +67,7 @@ export class ScribbleFillUtils {
         }
 
         // Add watercolor texture to the pattern
+        // TODO: make blobs count configurable
         this.addWatercolorTexture(pattern, width, height, color, 4);
 
         // Create the scribble lines with given angle and density
