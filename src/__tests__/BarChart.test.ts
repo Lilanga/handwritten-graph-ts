@@ -69,6 +69,57 @@ describe('BarChart', () => {
         expect(container.querySelector('svg')).toBeTruthy();
     });
 
+    test('should create bar chart with scribble fill', () => {
+        const config = {
+            useScribbleFill: true,
+            fillStyle: 'directional' as const
+        };
+
+        chart = new BarChart('#test-container', mockData, config);
+
+        expect(container.querySelector('svg')).toBeTruthy();
+        expect(container.querySelector('defs')).toBeTruthy();
+    });
+
+    test('should create bar chart with oil paint fill', () => {
+        const config = {
+            useScribbleFill: false,
+            fillStyle: 'oilpaint' as const
+        };
+
+        chart = new BarChart('#test-container', mockData, config);
+
+        expect(container.querySelector('svg')).toBeTruthy();
+        expect(container.querySelector('defs')).toBeTruthy();
+    });
+
+    test('should handle empty data gracefully', () => {
+        const emptyData: BarChartData = {
+            labels: [],
+            datasets: []
+        };
+
+        chart = new BarChart('#test-container', emptyData);
+
+        expect(container.querySelector('svg')).toBeTruthy();
+    });
+
+    test('should handle null/undefined data gracefully', () => {
+        expect(() => {
+            chart = new BarChart('#test-container', null as any);
+        }).not.toThrow();
+    });
+
+    test('should destroy chart properly', () => {
+        chart = new BarChart('#test-container', mockData);
+        const svg = container.querySelector('svg');
+        expect(svg).toBeTruthy();
+
+        chart.destroy();
+
+        expect(container.querySelector('svg')).toBeFalsy();
+    });
+
     test('should handle multiple datasets', () => {
         const multiDatasetData: BarChartData = {
             labels: ['Q1', 'Q2', 'Q3', 'Q4'],

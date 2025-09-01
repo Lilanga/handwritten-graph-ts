@@ -76,6 +76,70 @@ describe('LineChart', () => {
         }).not.toThrow();
     });
 
+    test('should handle showArea configuration', () => {
+        const config: Partial<LineChartConfig> = {
+            showArea: true
+        };
+
+        chart = new LineChart('#test-container', mockData, config);
+
+        expect(container.querySelector('svg')).toBeTruthy();
+    });
+
+    test('should handle scribble fill with area', () => {
+        const config: Partial<LineChartConfig> = {
+            showArea: true,
+            useScribbleFill: true,
+            fillStyle: 'directional'
+        };
+
+        chart = new LineChart('#test-container', mockData, config);
+
+        expect(container.querySelector('svg')).toBeTruthy();
+        expect(container.querySelector('defs')).toBeTruthy();
+    });
+
+    test('should handle oil paint fill with area', () => {
+        const config: Partial<LineChartConfig> = {
+            showArea: true,
+            useScribbleFill: false,
+            fillStyle: 'oilpaint'
+        };
+
+        chart = new LineChart('#test-container', mockData, config);
+
+        expect(container.querySelector('svg')).toBeTruthy();
+        expect(container.querySelector('defs')).toBeTruthy();
+    });
+
+    test('should handle multiple datasets', () => {
+        const multiDatasetData: LineChartData = {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr'],
+            datasets: [
+                {
+                    label: 'Series 1',
+                    data: [10, 20, 30, 40],
+                    lineColor: 'blue'
+                },
+                {
+                    label: 'Series 2',
+                    data: [15, 25, 35, 45],
+                    lineColor: 'red'
+                }
+            ]
+        };
+
+        chart = new LineChart('#test-container', multiDatasetData);
+
+        expect(container.querySelector('svg')).toBeTruthy();
+    });
+
+    test('should handle null/undefined data', () => {
+        expect(() => {
+            chart = new LineChart('#test-container', null as any);
+        }).not.toThrow();
+    });
+
     test('should destroy chart properly', () => {
         chart = new LineChart('#test-container', mockData);
 

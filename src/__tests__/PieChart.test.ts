@@ -61,6 +61,51 @@ describe('PieChart', () => {
         expect(container.querySelector('svg')).toBeTruthy();
     });
 
+    test('should handle oil paint fill patterns', () => {
+        const config: Partial<PieChartConfig> = {
+            useScribbleFill: false,
+            fillStyle: 'oilpaint'
+        };
+
+        const chart = new PieChart('#test-container', mockData, config);
+
+        expect(container.querySelector('svg')).toBeTruthy();
+        expect(container.querySelector('defs')).toBeTruthy();
+    });
+
+    test('should handle empty data', () => {
+        expect(() => {
+            new PieChart('#test-container', []);
+        }).not.toThrow();
+    });
+
+    test('should handle null/undefined data', () => {
+        expect(() => {
+            new PieChart('#test-container', null as any);
+        }).not.toThrow();
+    });
+
+    test('should handle legend border configuration', () => {
+        const config: Partial<PieChartConfig> = {
+            legendBorder: true
+        };
+
+        const chart = new PieChart('#test-container', mockData, config);
+
+        expect(container.querySelector('svg')).toBeTruthy();
+    });
+
+    test('should handle custom dimensions', () => {
+        const config: Partial<PieChartConfig> = {
+            width: 600,
+            height: 400
+        };
+
+        const chart = new PieChart('#test-container', mockData, config);
+
+        expect(container.querySelector('svg')).toBeTruthy();
+    });
+
     test('should destroy chart properly', () => {
         const chart = new PieChart('#test-container', mockData);
 
