@@ -4,6 +4,22 @@ A modern TypeScript library for creating hand-drawn style charts inspired by com
 
 ## Documentation
 
+### Example
+
+Here’s some example of a graph generated with this library:
+
+#### Bar charts
+
+![Example Handwritten Graph](.github/docs/barchart.png)
+
+#### Pie charts
+
+![Example Handwritten Graph](.github/docs/piechart.png)
+
+#### Donut charts
+
+![Example Handwritten Graph](.github/docs/donut.png)
+
 **[Complete API Documentation](https://handwritten-graph-docs.readthedocs.io/en/latest/)**
 
 [📚 Live Demo](https://p7wc4d.csb.app) | [📖 Quick Start](https://handwritten-graph-docs.readthedocs.io/en/latest/quick-start.html)
@@ -184,6 +200,14 @@ The library follows modern TypeScript patterns:
 MIT License - see LICENSE file for details.
 
 ## Changelog
+
+### v1.0.6
+
+- **ENHANCED**: Blob shapes improved to have better borders, and soft boundaries
+- **ENHANCED**: Improve pastel/pencil color conversion for hand-drawn aesthetics
+- **OPTIMIZED**: Improve rendering performance with reduced filter complexity
+- **OPTIMIZED**: Pattern caching system reduce memory footprint
+- **FIXED**: Improved scribble lines to cover fill areas properly
 
 ### v1.0.5
 
