@@ -215,7 +215,7 @@ export class ScribbleFillUtils {
         // Create pastel patches for the background with randomized sizes and positions
         const patchCount = 6;
         for (let i = 0; i < patchCount; i++) {
-            const pastel = this.toPastelColor(color, 0.08 + Math.random() * 0.015);
+            const pastel = this.toPastelColor(color, 0.35 + Math.random() * 0.25);
             const offsetX = (Math.random() - 0.8) * width * 0.08;
             const offsetY = (Math.random() - 0.5) * height * 0.05;
             const w = width * (0.6 + Math.random() * 0.4);
@@ -521,7 +521,7 @@ export class ScribbleFillUtils {
     }
 
     // Converts any color to authentic pastel/pencil colors like hand-drawn art
-    static toPastelColor(baseColor: string, alpha: number = 0.12): string {
+    static toPastelColor(baseColor: string, alpha: number = 0.65): string {
         const d3Color = d3.color(baseColor);
         if (d3Color) {
             const hsl = d3.hsl(d3Color);
@@ -534,11 +534,11 @@ export class ScribbleFillUtils {
             hsl.h += hueJitter;
             
             // Transform to pastel/pencil color characteristics
-            // Pastels have medium saturation (not too vibrant, not too dull)
-            hsl.s = Math.max(0.35, Math.min(0.75, hsl.s * 0.8 + satJitter));
+            // Pastels have medium saturation (more vibrant for better visibility)
+            hsl.s = Math.max(0.45, Math.min(0.85, hsl.s * 0.9 + satJitter));
             
-            // Pencil colors are slightly lighter but not washed out
-            hsl.l = Math.max(0.55, Math.min(0.8, hsl.l * 1.15 + lightJitter));
+            // Pencil colors are balanced, not too light to maintain visibility
+            hsl.l = Math.max(0.45, Math.min(0.75, hsl.l * 1.05 + lightJitter));
 
             return `hsla(${hsl.h}, ${hsl.s * 100}%, ${hsl.l * 100}%, ${alpha})`;
         }
@@ -548,7 +548,7 @@ export class ScribbleFillUtils {
     }
 
     // Convert colors to authentic pencil-like colors (slightly different from pastels)
-    static toPencilColor(baseColor: string, alpha: number = 0.3): string {
+    static toPencilColor(baseColor: string, alpha: number = 0.75): string {
         const d3Color = d3.color(baseColor);
         if (d3Color) {
             const hsl = d3.hsl(d3Color);
@@ -557,11 +557,11 @@ export class ScribbleFillUtils {
             const hueShift = (Math.random() - 0.5) * 15;
             hsl.h += hueShift;
             
-            // Pencil colors are more muted than pastels
-            hsl.s = Math.max(0.25, Math.min(0.65, hsl.s * 0.7));
+            // Pencil colors have good saturation for visibility
+            hsl.s = Math.max(0.35, Math.min(0.75, hsl.s * 0.8));
             
-            // Slightly darker than pastels for pencil effect
-            hsl.l = Math.max(0.45, Math.min(0.75, hsl.l * 1.05));
+            // Balanced lightness for pencil effect while maintaining visibility
+            hsl.l = Math.max(0.4, Math.min(0.7, hsl.l * 1.0));
 
             return `hsla(${hsl.h}, ${hsl.s * 100}%, ${hsl.l * 100}%, ${alpha})`;
         }
@@ -578,7 +578,7 @@ export class ScribbleFillUtils {
         // Ensure we always have colors to work with
         const safeColors = colors.length > 0 ? colors : ['#666666']; // Fallback to gray
         
-        return safeColors.map((color, index) => {
+        const patterns = safeColors.map((color, index) => {
             try {
                 const variation = this.generateNaturalVariation(color, index, safeColors.length);
                 const seed = `${color}-${index}-scribble`;
@@ -614,6 +614,9 @@ export class ScribbleFillUtils {
                 return this.createFallbackScribblePattern(defs, color, index);
             }
         });
+        
+        // Final safety net: ensure we never return an empty array
+        return patterns.length > 0 ? patterns : [safeColors[0]];
     }
 
     // Create a guaranteed fallback pattern that always works
@@ -631,14 +634,14 @@ export class ScribbleFillUtils {
             .attr('patternUnits', 'userSpaceOnUse');
 
         // Simple but effective scribble pattern
-        const pencilColor = this.toPencilColor(color, 0.8);
+        const pencilColor = this.toPencilColor(color, 0.85);
         
         // Base layer
         pattern.append('rect')
             .attr('width', 150)
             .attr('height', 150)
             .attr('fill', pencilColor)
-            .attr('fill-opacity', 0.3);
+            .attr('fill-opacity', 0.6);
 
         // Simple diagonal lines
         const angle = (index * 45) % 180; // Different angle per index
@@ -654,8 +657,51 @@ export class ScribbleFillUtils {
                 .attr('y2', 150)
                 .attr('stroke', color)
                 .attr('stroke-width', 1 + Math.random() * 0.5)
-                .attr('stroke-opacity', 0.6 + Math.random() * 0.4)
+                .attr('stroke-opacity', 0.8 + Math.random() * 0.2)
                 .attr('stroke-linecap', 'round');
+        }
+
+        return `url(#${patternId})`;
+    }
+
+    // Create a guaranteed fallback oil paint pattern that always works
+    private static createFallbackOilPaintPattern(
+        defs: d3.Selection<SVGDefsElement, unknown, null, undefined>,
+        color: string,
+        index: number
+    ): string {
+        const patternId = `fallback-oil-${index}-${Date.now()}`;
+        
+        const pattern = defs.append('pattern')
+            .attr('id', patternId)
+            .attr('width', 120)
+            .attr('height', 120)
+            .attr('patternUnits', 'userSpaceOnUse');
+
+        // Simple but effective oil paint pattern
+        const baseColor = this.toPastelColor(color, 0.8);
+        
+        // Base layer
+        pattern.append('rect')
+            .attr('width', 120)
+            .attr('height', 120)
+            .attr('fill', baseColor);
+
+        // Create simple paint blobs
+        const group = pattern.append('g');
+        
+        for (let i = 0; i < 15; i++) {
+            const x = Math.random() * 120;
+            const y = Math.random() * 120;
+            const size = 8 + Math.random() * 12;
+            const opacity = 0.6 + Math.random() * 0.3;
+            
+            group.append('circle')
+                .attr('cx', x)
+                .attr('cy', y)
+                .attr('r', size)
+                .attr('fill', this.toPastelColor(color, opacity))
+                .attr('opacity', opacity);
         }
 
         return `url(#${patternId})`;
@@ -707,7 +753,7 @@ export class ScribbleFillUtils {
             .attr("patternUnits", "userSpaceOnUse");
 
         // Create pencil-like base color layer
-        const baseColor = this.toPencilColor(color, 0.12 + rng() * 0.08);
+        const baseColor = this.toPencilColor(color, 0.45 + rng() * 0.25);
         pattern.append("rect")
             .attr("width", width)
             .attr("height", height)
@@ -717,7 +763,7 @@ export class ScribbleFillUtils {
         // Create organic pastel blobs with natural edges (no squares)
         const blobCount = 3 + Math.floor(rng() * 2); // 3-4 organic blobs
         for (let i = 0; i < blobCount; i++) {
-            const pastelColor = this.toPastelColor(color, 0.8 + rng() * 0.2);
+            const pastelColor = this.toPastelColor(color, 0.85 + rng() * 0.15);
             
             // Position blobs to cover different areas
             const cx = width * (0.2 + i * 0.3 + rng() * 0.3); // Distributed placement
@@ -729,7 +775,7 @@ export class ScribbleFillUtils {
             pattern.append('path')
                 .attr('d', blobPath)
                 .attr('fill', pastelColor)
-                .attr('fill-opacity', 0.15 + rng() * 0.1) // Subtle background blobs
+                .attr('fill-opacity', 0.4 + rng() * 0.2) // More visible background blobs
                 .attr('stroke', 'none');
         }
 
@@ -786,8 +832,8 @@ export class ScribbleFillUtils {
             
             const path = this.generateNaturalScribbleLine(x, startY, x, endY, rng);
             
-            const strokeWidth = strokeVariation * (0.6 + rng() * 0.4); // Thinner cross-hatch
-            const opacity = Math.max(0.3, opacityVariation * (0.4 + rng() * 0.3)); // 0.3-0.7 range
+            const strokeWidth = strokeVariation * (0.8 + rng() * 0.5); // More visible cross-hatch
+            const opacity = Math.max(0.5, opacityVariation * (0.6 + rng() * 0.3)); // 0.5-0.9 range
             
             crossGroup
                 .append("path")
@@ -823,7 +869,7 @@ export class ScribbleFillUtils {
             .attr('width', 120)
             .attr('height', 120)
             .attr('fill', color)
-            .attr('fill-opacity', 0.4);
+            .attr('fill-opacity', 0.7);
 
         // First layer - large watercolor blobs
         for (let i = 0; i < 6; i++) {
@@ -839,7 +885,7 @@ export class ScribbleFillUtils {
             pattern.append('path')
                 .attr('d', this.createWatercolorBlob(cx, cy, rx, ry))
                 .attr('fill', blobColor)
-                .attr('fill-opacity', 0.2 + Math.random() * 0.3)
+                .attr('fill-opacity', 0.4 + Math.random() * 0.3)
                 .attr('stroke', 'none');
         }
 
@@ -857,7 +903,7 @@ export class ScribbleFillUtils {
             pattern.append('path')
                 .attr('d', this.createWatercolorBlob(cx, cy, rx, ry))
                 .attr('fill', blobColor)
-                .attr('fill-opacity', 0.15 + Math.random() * 0.25)
+                .attr('fill-opacity', 0.3 + Math.random() * 0.25)
                 .attr('stroke', 'none');
         }
 
@@ -875,7 +921,7 @@ export class ScribbleFillUtils {
             pattern.append('path')
                 .attr('d', this.createWatercolorBlob(cx, cy, rx, ry))
                 .attr('fill', blobColor)
-                .attr('fill-opacity', isHighlight ? (0.2 + Math.random() * 0.3) : (0.1 + Math.random() * 0.2))
+                .attr('fill-opacity', isHighlight ? (0.35 + Math.random() * 0.3) : (0.25 + Math.random() * 0.2))
                 .attr('stroke', 'none');
         }
 
@@ -888,29 +934,40 @@ export class ScribbleFillUtils {
         defs: d3.Selection<SVGDefsElement, unknown, null, undefined>,
         colors: string[]
     ): string[] {
-        return colors.map((color, index) => {
-            const seed = `${color}-${index}-oil`;
-            const variation = this.generateNaturalVariation(color, index, colors.length);
-            
-            const cacheKey: PatternCacheKey = {
-                type: 'oilpaint',
-                color,
-                width: 120,
-                height: 120,
-                seed,
-                variation: `texture-${variation.density}`
-            };
-
-            return this.getCachedPattern(cacheKey, defs, () => {
-                return this.createEnhancedOilPaintPattern(
-                    defs, 
-                    `oil-paint-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, 
+        // Ensure we always have colors to work with
+        const safeColors = colors.length > 0 ? colors : ['#666666'];
+        
+        const patterns = safeColors.map((color, index) => {
+            try {
+                const seed = `${color}-${index}-oil`;
+                const variation = this.generateNaturalVariation(color, index, safeColors.length);
+                
+                const cacheKey: PatternCacheKey = {
+                    type: 'oilpaint',
                     color,
+                    width: 120,
+                    height: 120,
                     seed,
-                    variation.density
-                );
-            });
+                    variation: `texture-${variation.density}`
+                };
+
+                return this.getCachedPattern(cacheKey, defs, () => {
+                    return this.createEnhancedOilPaintPattern(
+                        defs, 
+                        `oil-paint-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, 
+                        color,
+                        seed,
+                        variation.density
+                    );
+                });
+            } catch (error) {
+                console.warn(`Failed to create oil paint pattern for color ${color}, creating fallback:`, error);
+                return this.createFallbackOilPaintPattern(defs, color, index);
+            }
         });
+        
+        // Final safety net: ensure we never return an empty array
+        return patterns.length > 0 ? patterns : [safeColors[0]];
     }
 
     // Enhanced oil paint pattern with natural texture variations
@@ -935,7 +992,7 @@ export class ScribbleFillUtils {
             .attr('width', 120)
             .attr('height', 120)
             .attr('fill', color)
-            .attr('fill-opacity', 0.3 + rng() * 0.2); // 0.3-0.5 base opacity
+            .attr('fill-opacity', 0.5 + rng() * 0.2); // 0.5-0.7 base opacity
 
         // Create multiple layers based on texture complexity
         const layerCount = Math.max(3, Math.floor(textureComplexity / 4));
@@ -974,9 +1031,9 @@ export class ScribbleFillUtils {
     ): void {
         // Layer-specific characteristics
         const layerTypes = [
-            { size: [30, 60], opacity: [0.2, 0.4], colorShift: [-15, 25] },    // Large base shapes
-            { size: [15, 35], opacity: [0.15, 0.35], colorShift: [-20, 30] },  // Medium details
-            { size: [5, 15], opacity: [0.1, 0.25], colorShift: [-10, 35] }     // Small highlights
+            { size: [30, 60], opacity: [0.4, 0.6], colorShift: [-15, 25] },    // Large base shapes
+            { size: [15, 35], opacity: [0.3, 0.5], colorShift: [-20, 30] },  // Medium details
+            { size: [5, 15], opacity: [0.25, 0.4], colorShift: [-10, 35] }     // Small highlights
         ];
         
         const layerType = layerTypes[Math.min(layerIndex, layerTypes.length - 1)];
@@ -1047,7 +1104,7 @@ export class ScribbleFillUtils {
                 .attr('cy', cy)
                 .attr('r', radius)
                 .attr('fill', color)
-                .attr('fill-opacity', 0.05 + rng() * 0.05) // Very subtle
+                .attr('fill-opacity', 0.15 + rng() * 0.1) // More visible
                 .attr('stroke', 'none');
         }
     }
@@ -1078,7 +1135,7 @@ export class ScribbleFillUtils {
             pattern.append("path")
                 .attr("d", blobPath)
                 .attr("fill", blobColor)
-                .attr("fill-opacity", 0.12 + Math.random() * 0.15)
+                .attr("fill-opacity", 0.25 + Math.random() * 0.2)
                 .attr("stroke", "none")
                 .attr("filter", "url(#watercolor-soft-blur)");
         }

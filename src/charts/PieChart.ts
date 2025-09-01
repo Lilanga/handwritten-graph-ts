@@ -218,16 +218,43 @@ export class PieChart extends BaseChart<PieChartData, PieChartConfig> {
                 }
             })
             .attr('fill', (d, i) => {
-                if (this.config.useScribbleFill && fillPatterns.length > 0) {
-                    return fillPatterns[i % fillPatterns.length];
+                if (this.config.useScribbleFill) {
+                    if (fillPatterns.length > 0) {
+                        return fillPatterns[i % fillPatterns.length];
+                    } else {
+                        // Emergency pattern creation for individual slices
+                        const sliceColor = d.data.color || '#666';
+                        try {
+                            const emergencyPatterns = this.config.fillStyle === 'oilpaint' 
+                                ? ScribbleFillUtils.createOilPaintPatternSet(this.defs!, [sliceColor])
+                                : ScribbleFillUtils.createScribblePatternSet(this.defs!, [sliceColor]);
+                            return emergencyPatterns.length > 0 ? emergencyPatterns[0] : sliceColor;
+                        } catch (error) {
+                            console.warn('Emergency pattern creation failed, using solid color:', error);
+                            return sliceColor;
+                        }
+                    }
                 } else {
-                    return d.data.color || '#666'; // Provide fallback color
+                    return d.data.color || '#666';
                 }
             })
             .attr('stroke', (d, i) => {
                 // Use the same fill as the border for seamless appearance
-                if (this.config.useScribbleFill && fillPatterns.length > 0) {
-                    return fillPatterns[i % fillPatterns.length];
+                if (this.config.useScribbleFill) {
+                    if (fillPatterns.length > 0) {
+                        return fillPatterns[i % fillPatterns.length];
+                    } else {
+                        // Emergency pattern creation for stroke (same as fill)
+                        const sliceColor = d.data.color || '#666';
+                        try {
+                            const emergencyPatterns = this.config.fillStyle === 'oilpaint' 
+                                ? ScribbleFillUtils.createOilPaintPatternSet(this.defs!, [sliceColor])
+                                : ScribbleFillUtils.createScribblePatternSet(this.defs!, [sliceColor]);
+                            return emergencyPatterns.length > 0 ? emergencyPatterns[0] : sliceColor;
+                        } catch (error) {
+                            return sliceColor;
+                        }
+                    }
                 } else {
                     return d.data.color || '#666';
                 }
@@ -331,9 +358,20 @@ export class PieChart extends BaseChart<PieChartData, PieChartConfig> {
                 .attr('y', this.config.handDrawnEffect ? (Math.random() - 0.5) * 2 : 0)
                 .attr('width', 8)
                 .attr('height', 8)
-                .attr('fill', this.config.useScribbleFill && fillPatterns.length > 0
-                    ? fillPatterns[i % fillPatterns.length]
-                    : (d.color || '#666')) // Provide fallback color
+                .attr('fill', this.config.useScribbleFill
+                    ? (fillPatterns.length > 0 
+                        ? fillPatterns[i % fillPatterns.length]
+                        : (() => {
+                            try {
+                                const emergencyPatterns = this.config.fillStyle === 'oilpaint' 
+                                    ? ScribbleFillUtils.createOilPaintPatternSet(this.defs!, [d.color || '#666'])
+                                    : ScribbleFillUtils.createScribblePatternSet(this.defs!, [d.color || '#666']);
+                                return emergencyPatterns.length > 0 ? emergencyPatterns[0] : (d.color || '#666');
+                            } catch (error) {
+                                return d.color || '#666';
+                            }
+                        })())
+                    : (d.color || '#666'))
                 .attr('rx', 2)
                 .attr('ry', 2)
                 .attr('filter', this.config.handDrawnEffect ? 'url(#xkcdify)' : null);

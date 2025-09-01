@@ -307,9 +307,25 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
             const barColor = dataset.barColor || this.colorScale!(datasetIndex.toString());
             const borderColor = dataset.borderColor || this.config.borderColor;
             const borderWidth = dataset.borderWidth || this.config.borderWidth;
-            const fillPattern = this.config.useScribbleFill && fillPatterns.length > 0
-                ? fillPatterns[datasetIndex % fillPatterns.length]
-                : barColor;
+            let fillPattern: string;
+            if (this.config.useScribbleFill) {
+                if (fillPatterns.length > 0) {
+                    fillPattern = fillPatterns[datasetIndex % fillPatterns.length];
+                } else {
+                    // Emergency pattern creation for this dataset
+                    try {
+                        const emergencyPatterns = this.config.fillStyle === 'oilpaint' 
+                            ? ScribbleFillUtils.createOilPaintPatternSet(this.defs!, [barColor])
+                            : ScribbleFillUtils.createScribblePatternSet(this.defs!, [barColor]);
+                        fillPattern = emergencyPatterns.length > 0 ? emergencyPatterns[0] : barColor;
+                    } catch (error) {
+                        console.warn('Emergency pattern creation failed for bar, using solid color:', error);
+                        fillPattern = barColor;
+                    }
+                }
+            } else {
+                fillPattern = barColor;
+            }
 
             const bars = barGroups.selectAll(`.bar-${datasetIndex}`)
                 .data((d, i) => [{ label: d, value: dataset.data[i], datasetIndex }])
@@ -481,9 +497,24 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
 
         this.data.datasets.forEach((dataset, index) => {
             const barColor = dataset.barColor || this.colorScale!(index.toString());
-            const fillPattern = this.config.useScribbleFill && fillPatterns.length > 0
-                ? fillPatterns[index % fillPatterns.length]
-                : barColor;
+            let fillPattern: string;
+            if (this.config.useScribbleFill) {
+                if (fillPatterns.length > 0) {
+                    fillPattern = fillPatterns[index % fillPatterns.length];
+                } else {
+                    // Emergency pattern creation for legend
+                    try {
+                        const emergencyPatterns = this.config.fillStyle === 'oilpaint' 
+                            ? ScribbleFillUtils.createOilPaintPatternSet(this.defs!, [barColor])
+                            : ScribbleFillUtils.createScribblePatternSet(this.defs!, [barColor]);
+                        fillPattern = emergencyPatterns.length > 0 ? emergencyPatterns[0] : barColor;
+                    } catch (error) {
+                        fillPattern = barColor;
+                    }
+                }
+            } else {
+                fillPattern = barColor;
+            }
 
             legendGroup.append('rect')
                 .attr('x', this.config.handDrawnEffect ? (Math.random() - 0.5) * 2 : 0)
