@@ -10,12 +10,12 @@
     "files": [
         "dist/**/*",
         "src/types/**/*",
-        "README.md",
         "LICENSE"
     ],
     "scripts": {
-        "build": "npm run build:clean && npm run build:webpack && npm run build:types && npm run validate:types",
-        "build:production": "npm run build:clean && npm run build:webpack:production && npm run build:types && npm run validate:types",
+        "build": "npm run build:clean && npm run build:webpack && npm run build:types && npm run validate:types && npm run prepare:npm-readme",
+        "build:production": "npm run build:clean && npm run build:webpack:production && npm run build:types && npm run validate:types && npm run prepare:npm-readme",
+        "prepare:npm-readme": "node scripts/prepare-npm-readme.js",
         "build:clean": "rimraf dist",
         "build:webpack": "cross-env NODE_ENV=production webpack --mode production",
         "build:webpack:production": "cross-env NODE_ENV=production webpack --mode production --optimization-minimize",
