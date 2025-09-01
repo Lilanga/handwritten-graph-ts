@@ -12,6 +12,13 @@ module.exports = {
     globalObject: 'this',
     clean: true,
   },
+  optimization: {
+    usedExports: true,
+    sideEffects: false,
+    minimize: process.env.NODE_ENV === 'production',
+    concatenateModules: true, // Better tree shaking
+    mangleExports: process.env.NODE_ENV === 'production' ? 'size' : false,
+  },
   resolve: {
     extensions: ['.ts', '.js', '.scss', '.css'],
   },

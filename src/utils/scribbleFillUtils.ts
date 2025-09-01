@@ -24,6 +24,9 @@ export class ScribbleFillUtils {
     private static patternCache = new Map<string, PatternCacheEntry>();
     private static maxCacheSize = 50;
     private static cacheExpirationTime = 5 * 60 * 1000; // 5 minutes
+    
+    // Memoization cache for expensive calculations
+    private static calculationCache = new Map<string, any>();
 
     // Seeded random number generator for consistent but varied patterns
     private static seededRandom(seed: string): () => number {
@@ -46,6 +49,7 @@ export class ScribbleFillUtils {
         density: number;
         strokeVariation: number;
         opacityVariation: number;
+        rng: () => number;
     } {
         const seed = `${color}-${index}-${total}`;
         const rng = this.seededRandom(seed);
@@ -64,7 +68,7 @@ export class ScribbleFillUtils {
         const strokeVariation = 0.5 + rng() * 1.0; // 0.5 to 1.5
         const opacityVariation = 0.7 + rng() * 0.3; // 0.7 to 1.0
         
-        return { direction, density, strokeVariation, opacityVariation };
+        return { direction, density, strokeVariation, opacityVariation, rng };
     }
 
     // Generate a cache key for a pattern
@@ -521,24 +525,27 @@ export class ScribbleFillUtils {
     }
 
     // Converts any color to authentic pastel/pencil colors like hand-drawn art
-    static toPastelColor(baseColor: string, alpha: number = 0.65): string {
+    static toPastelColor(baseColor: string, alpha: number = 0.65, rng?: () => number): string {
+        const randomFn = rng || (() => Math.random());
         const d3Color = d3.color(baseColor);
         if (d3Color) {
             const hsl = d3.hsl(d3Color);
             
             // Create authentic pastel/pencil color transformations
-            const hueJitter = (Math.random() - 0.5) * 12; // More hue variation for natural feel
-            const satJitter = (Math.random() - 0.5) * 0.2;
-            const lightJitter = (Math.random() - 0.5) * 0.15;
+            const hueJitter = (randomFn() - 0.5) * 12; // More hue variation for natural feel
+            const satJitter = (randomFn() - 0.5) * 0.2;
+            const lightJitter = (randomFn() - 0.5) * 0.15;
 
             hsl.h += hueJitter;
             
             // Transform to pastel/pencil color characteristics
             // Pastels have medium saturation (more vibrant for better visibility)
-            hsl.s = Math.max(0.45, Math.min(0.85, hsl.s * 0.9 + satJitter));
+            hsl.s = Math.max(0.5, Math.min(0.85, hsl.s * 0.9 + satJitter));
             
-            // Pencil colors are balanced, not too light to maintain visibility
-            hsl.l = Math.max(0.45, Math.min(0.75, hsl.l * 1.05 + lightJitter));
+            // For oil paint, ensure adequate brightness while preserving color character
+            // Boost lightness more for very dark colors
+            const lightBoost = hsl.l < 0.3 ? 0.4 : 0.2; // Extra boost for dark colors
+            hsl.l = Math.max(0.5, Math.min(0.8, hsl.l + lightBoost + lightJitter));
 
             return `hsla(${hsl.h}, ${hsl.s * 100}%, ${hsl.l * 100}%, ${alpha})`;
         }
@@ -548,13 +555,14 @@ export class ScribbleFillUtils {
     }
 
     // Convert colors to authentic pencil-like colors (slightly different from pastels)
-    static toPencilColor(baseColor: string, alpha: number = 0.75): string {
+    static toPencilColor(baseColor: string, alpha: number = 0.75, rng?: () => number): string {
+        const randomFn = rng || (() => Math.random());
         const d3Color = d3.color(baseColor);
         if (d3Color) {
             const hsl = d3.hsl(d3Color);
             
             // Pencil colors have subtle variations and earthy tones
-            const hueShift = (Math.random() - 0.5) * 15;
+            const hueShift = (randomFn() - 0.5) * 15;
             hsl.h += hueShift;
             
             // Pencil colors have good saturation for visibility
@@ -597,7 +605,7 @@ export class ScribbleFillUtils {
                 return this.getCachedPattern(cacheKey, defs, () => {
                     return this.createEnhancedDirectionalScribblePattern(
                         defs,
-                        `scribble-pattern-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        `scribble-pattern-${index}-${seed.slice(-9)}`, // Use deterministic ID
                         color,
                         variation.density,
                         150,
@@ -619,6 +627,24 @@ export class ScribbleFillUtils {
         return patterns.length > 0 ? patterns : [safeColors[0]];
     }
 
+    // Optimized batch DOM operation helper
+    private static batchCreateElements(
+        parent: d3.Selection<any, unknown, null, undefined>,
+        elementType: string,
+        count: number,
+        applyAttributes: (selection: d3.Selection<any, unknown, null, undefined>, index: number) => void
+    ): void {
+        const elements = parent.selectAll(`.batch-${elementType}`)
+            .data(Array(count).fill(0).map((_, i) => i))
+            .enter()
+            .append(elementType)
+            .attr('class', `batch-${elementType}`);
+        
+        elements.each(function(d, i) {
+            applyAttributes(d3.select(this), i);
+        });
+    }
+
     // Create a guaranteed fallback pattern that always works
     private static createFallbackScribblePattern(
         defs: d3.Selection<SVGDefsElement, unknown, null, undefined>,
@@ -634,7 +660,8 @@ export class ScribbleFillUtils {
             .attr('patternUnits', 'userSpaceOnUse');
 
         // Simple but effective scribble pattern
-        const pencilColor = this.toPencilColor(color, 0.85);
+        const rng = this.seededRandom(`${color}-${index}-fallback`);
+        const pencilColor = this.toPencilColor(color, 0.85, rng);
         
         // Base layer
         pattern.append('rect')
@@ -656,8 +683,8 @@ export class ScribbleFillUtils {
                 .attr('x2', x)
                 .attr('y2', 150)
                 .attr('stroke', color)
-                .attr('stroke-width', 1 + Math.random() * 0.5)
-                .attr('stroke-opacity', 0.8 + Math.random() * 0.2)
+                .attr('stroke-width', 1 + rng() * 0.5)
+                .attr('stroke-opacity', 0.8 + rng() * 0.2)
                 .attr('stroke-linecap', 'round');
         }
 
@@ -679,7 +706,8 @@ export class ScribbleFillUtils {
             .attr('patternUnits', 'userSpaceOnUse');
 
         // Simple but effective oil paint pattern
-        const baseColor = this.toPastelColor(color, 0.8);
+        const rng = this.seededRandom(`${color}-${index}-oil-fallback`);
+        const baseColor = this.toPastelColor(color, 0.8, rng);
         
         // Base layer
         pattern.append('rect')
@@ -691,16 +719,16 @@ export class ScribbleFillUtils {
         const group = pattern.append('g');
         
         for (let i = 0; i < 15; i++) {
-            const x = Math.random() * 120;
-            const y = Math.random() * 120;
-            const size = 8 + Math.random() * 12;
-            const opacity = 0.6 + Math.random() * 0.3;
+            const x = rng() * 120;
+            const y = rng() * 120;
+            const size = 8 + rng() * 12;
+            const opacity = 0.6 + rng() * 0.3;
             
             group.append('circle')
                 .attr('cx', x)
                 .attr('cy', y)
                 .attr('r', size)
-                .attr('fill', this.toPastelColor(color, opacity))
+                .attr('fill', this.toPastelColor(color, opacity, rng))
                 .attr('opacity', opacity);
         }
 
@@ -952,9 +980,11 @@ export class ScribbleFillUtils {
                 };
 
                 return this.getCachedPattern(cacheKey, defs, () => {
+                    // Sanitize seed for use in SVG ID (remove invalid characters)
+                    const sanitizedSeed = seed.replace(/[^a-zA-Z0-9-]/g, '').slice(-9);
                     return this.createEnhancedOilPaintPattern(
                         defs, 
-                        `oil-paint-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, 
+                        `oil-paint-${index}-${sanitizedSeed}`, // Use deterministic ID
                         color,
                         seed,
                         variation.density
@@ -987,12 +1017,13 @@ export class ScribbleFillUtils {
             .attr('width', 120)
             .attr('height', 120);
 
-        // Base layer with varied opacity
+        // Base layer with improved visibility for oil paint
+        const baseColor = this.toPastelColor(color, 0.8, rng); // Make base color more visible
         pattern.append('rect')
             .attr('width', 120)
             .attr('height', 120)
-            .attr('fill', color)
-            .attr('fill-opacity', 0.5 + rng() * 0.2); // 0.5-0.7 base opacity
+            .attr('fill', baseColor)
+            .attr('fill-opacity', 0.7 + rng() * 0.2); // 0.7-0.9 base opacity for better visibility
 
         // Create multiple layers based on texture complexity
         const layerCount = Math.max(3, Math.floor(textureComplexity / 4));
@@ -1097,7 +1128,7 @@ export class ScribbleFillUtils {
         for (let i = 0; i < grainCount; i++) {
             const cx = rng() * 120;
             const cy = rng() * 120;
-            const radius = 0.5 + rng() * 1.5; // Very small grain
+            const radius = Math.max(0.1, 0.5 + rng() * 1.5); // Ensure positive radius
             
             pattern.append('circle')
                 .attr('cx', cx)

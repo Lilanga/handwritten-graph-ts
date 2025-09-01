@@ -130,13 +130,18 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
         }
 
         // Setting up color scale for datasets
-        // We are using d3.schemeCategory10 for consistent coloring across datasets
+        // Use brighter colors more suitable for oil paint patterns
+        const brightColors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', 
+            '#DDA0DD', '#FF7F50', '#87CEEB', '#98D8C8', '#F7DC6F'
+        ];
+        
         if (this.data.datasets && this.data.datasets.length > 0) {
-            this.colorScale = d3.scaleOrdinal(d3.schemeCategory10)
+            this.colorScale = d3.scaleOrdinal(brightColors)
                 .domain(this.data.datasets.map((_, i) => i.toString()));
         } else {
             // Fallback color scale for when there are no datasets
-            this.colorScale = d3.scaleOrdinal(d3.schemeCategory10)
+            this.colorScale = d3.scaleOrdinal(brightColors)
                 .domain(['0']);
         }
     }
@@ -183,13 +188,17 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
 
     // Create fill patterns based on the configuration and processed data
     private createFillPatterns(): string[] {
-        if (!this.config.useScribbleFill || !this.data.datasets || this.data.datasets.length === 0 || !this.defs) {
+        // Enable pattern creation for scribble fills OR when oil paint is explicitly requested
+        const shouldCreatePatterns = this.config.useScribbleFill || this.config.fillStyle === 'oilpaint';
+        
+        if (!shouldCreatePatterns || !this.data.datasets || this.data.datasets.length === 0 || !this.defs) {
             return [];
         }
 
         // Get colors from datasets or use color scale
+        // Honor explicitly specified dataset colors first
         const colors = this.data.datasets.map((dataset, index) =>
-            dataset.barColor || this.colorScale!(index.toString())
+            dataset.barColor || this.colorScale!(index.toString()) || '#666666'
         ).filter((color): color is string => typeof color === 'string' && color.length > 0);
 
         if (colors.length === 0) {
@@ -304,11 +313,12 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
         this.data.datasets.forEach((dataset, datasetIndex) => {
             if (!dataset.data || dataset.data.length === 0) return;
 
-            const barColor = dataset.barColor || this.colorScale!(datasetIndex.toString());
-            const borderColor = dataset.borderColor || this.config.borderColor;
+            // Honor explicitly specified colors, fallback to color scale, then default
+            const barColor = dataset.barColor || this.colorScale!(datasetIndex.toString()) || '#666666';
+            const borderColor = dataset.borderColor || barColor; // Honor specified borderColor, fallback to barColor
             const borderWidth = dataset.borderWidth || this.config.borderWidth;
             let fillPattern: string;
-            if (this.config.useScribbleFill) {
+            if (this.config.useScribbleFill || this.config.fillStyle === 'oilpaint') {
                 if (fillPatterns.length > 0) {
                     fillPattern = fillPatterns[datasetIndex % fillPatterns.length];
                 } else {
@@ -402,7 +412,7 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
             }
 
             // Store data for interactions - use original color for tooltip
-            const originalColor = dataset.barColor || this.colorScale!(datasetIndex.toString());
+            const originalColor = dataset.barColor || this.colorScale!(datasetIndex.toString()) || '#666666';
             element.datum({ label: barData.label, value, dataset: dataset.label, color: originalColor });
         });
     }
@@ -469,7 +479,7 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
             }
 
             // Store data for interactions - use original color for tooltip
-            const originalColor = dataset.barColor || this.colorScale!(datasetIndex.toString());
+            const originalColor = dataset.barColor || this.colorScale!(datasetIndex.toString()) || '#666666';
             element.datum({ label: barData.label, value, dataset: dataset.label, color: originalColor });
         });
     }
@@ -496,9 +506,9 @@ export class BarChart extends BaseChart<BarChartData, BarChartConfig> {
         }
 
         this.data.datasets.forEach((dataset, index) => {
-            const barColor = dataset.barColor || this.colorScale!(index.toString());
+            const barColor = dataset.barColor || this.colorScale!(index.toString()) || '#666666';
             let fillPattern: string;
-            if (this.config.useScribbleFill) {
+            if (this.config.useScribbleFill || this.config.fillStyle === 'oilpaint') {
                 if (fillPatterns.length > 0) {
                     fillPattern = fillPatterns[index % fillPatterns.length];
                 } else {

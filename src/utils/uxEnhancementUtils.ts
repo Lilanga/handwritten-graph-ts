@@ -34,7 +34,7 @@ export class UXEnhancementUtils {
         const animConfig = { ...this.DEFAULT_ANIMATION, ...config };
         
         selection
-            .on('mouseenter', function(event, d) {
+            .on('mouseenter', function() {
                 const element = d3.select(this);
                 
                 // Add subtle shadow for depth
@@ -58,7 +58,7 @@ export class UXEnhancementUtils {
                         return `${parseFloat(current) + 1}px`;
                     });
             })
-            .on('mouseleave', function(event, d) {
+            .on('mouseleave', function() {
                 const element = d3.select(this);
                 
                 element
@@ -116,9 +116,7 @@ export class UXEnhancementUtils {
                 .attr('stroke-dashoffset', totalLength)
                 .style('opacity', 0.7); // Slightly transparent during drawing
             
-            // Add slight hand tremor effect
-            const tremor = 0.5;
-            path.style('filter', `url(#hand-tremor-${Math.random().toString(36).substr(2, 9)})`);
+            // Add slight hand tremor effect (filter applied later)
             
             // Animate the drawing
             path
@@ -152,7 +150,7 @@ export class UXEnhancementUtils {
         selection
             .attr('tabindex', 0) // Make focusable
             .attr('role', 'button')
-            .on('focus', function(event, d) {
+            .on('focus', function() {
                 const element = d3.select(this);
                 
                 // High-contrast focus indicator
@@ -162,7 +160,6 @@ export class UXEnhancementUtils {
                 
                 // Announce to screen readers
                 if (accessConfig.announceChanges) {
-                    const label = element.attr('aria-label') || 'Chart element focused';
                     this.setAttribute('aria-live', 'polite');
                     this.setAttribute('aria-atomic', 'true');
                 }

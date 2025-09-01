@@ -1,6 +1,5 @@
 import * as d3 from 'd3';
 import { BaseChartConfig, ChartMargin } from '../types';
-import { UXEnhancementUtils } from '../utils/uxEnhancementUtils';
 
 // Abstract chart class for creating hand-drawn style charts.
 export abstract class BaseChart<TData, TConfig extends BaseChartConfig> {

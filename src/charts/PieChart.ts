@@ -86,7 +86,12 @@ export class PieChart extends BaseChart<PieChartData, PieChartConfig> {
             return [];
         }
 
-        const color = d3.scaleOrdinal(d3.schemeCategory10);
+        // Use brighter colors more suitable for oil paint and scribble patterns
+        const brightColors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', 
+            '#DDA0DD', '#FF7F50', '#87CEEB', '#98D8C8', '#F7DC6F'
+        ];
+        const color = d3.scaleOrdinal(brightColors);
 
         return data.map((d, i) => ({
             label: d.label || `Item ${i + 1}`,
@@ -171,7 +176,10 @@ export class PieChart extends BaseChart<PieChartData, PieChartConfig> {
 
     // Create fill patterns based on the configuration and processed data
     private createFillPatterns(): string[] {
-        if (!this.config.useScribbleFill || !this.processedData || this.processedData.length === 0 || !this.defs) {
+        // Enable pattern creation for scribble fills OR when oil paint is explicitly requested
+        const shouldCreatePatterns = this.config.useScribbleFill || this.config.fillStyle === 'oilpaint';
+        
+        if (!shouldCreatePatterns || !this.processedData || this.processedData.length === 0 || !this.defs) {
             return [];
         }
 
@@ -218,7 +226,7 @@ export class PieChart extends BaseChart<PieChartData, PieChartConfig> {
                 }
             })
             .attr('fill', (d, i) => {
-                if (this.config.useScribbleFill) {
+                if (this.config.useScribbleFill || this.config.fillStyle === 'oilpaint') {
                     if (fillPatterns.length > 0) {
                         return fillPatterns[i % fillPatterns.length];
                     } else {
@@ -240,7 +248,7 @@ export class PieChart extends BaseChart<PieChartData, PieChartConfig> {
             })
             .attr('stroke', (d, i) => {
                 // Use the same fill as the border for seamless appearance
-                if (this.config.useScribbleFill) {
+                if (this.config.useScribbleFill || this.config.fillStyle === 'oilpaint') {
                     if (fillPatterns.length > 0) {
                         return fillPatterns[i % fillPatterns.length];
                     } else {
@@ -358,7 +366,7 @@ export class PieChart extends BaseChart<PieChartData, PieChartConfig> {
                 .attr('y', this.config.handDrawnEffect ? (Math.random() - 0.5) * 2 : 0)
                 .attr('width', 8)
                 .attr('height', 8)
-                .attr('fill', this.config.useScribbleFill
+                .attr('fill', (this.config.useScribbleFill || this.config.fillStyle === 'oilpaint')
                     ? (fillPatterns.length > 0 
                         ? fillPatterns[i % fillPatterns.length]
                         : (() => {
