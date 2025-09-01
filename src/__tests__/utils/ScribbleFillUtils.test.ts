@@ -3,8 +3,15 @@ import * as d3 from 'd3';
 
 describe('ScribbleFillUtils', () => {
     let mockDefs: any;
+    let mockDefsElement: any;
 
     beforeEach(() => {
+        // Create a mock DOM element
+        mockDefsElement = {
+            querySelector: jest.fn(() => null), // Pattern doesn't exist initially
+            nodeType: 1
+        };
+
         // Create a mock SVG defs element
         mockDefs = {
             append: jest.fn().mockReturnThis(),
@@ -15,7 +22,8 @@ describe('ScribbleFillUtils', () => {
             select: jest.fn(() => ({
                 remove: jest.fn(),
                 empty: jest.fn(() => true) // Return true to indicate the selection is empty (filter doesn't exist)
-            }))
+            })),
+            node: jest.fn(() => mockDefsElement) // Add the missing node() method
         };
     });
 

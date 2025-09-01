@@ -279,9 +279,20 @@ export class LineChart extends BaseChart<LineChartData, LineChartConfig> {
             if (!dataset.data || dataset.data.length === 0) return;
 
             const lineColor = dataset.lineColor || this.config.lineColor;
-            const fillPattern = this.config.useScribbleFill && fillPatterns.length > 0
-                ? fillPatterns[index % fillPatterns.length]
-                : lineColor;
+            let fillPattern: string;
+            
+            if (this.config.useScribbleFill) {
+                if (fillPatterns.length > 0) {
+                    fillPattern = fillPatterns[index % fillPatterns.length];
+                } else {
+                    // Force create a pattern if needed
+                    console.warn('No fill patterns available, creating emergency pattern');
+                    const emergencyPatterns = ScribbleFillUtils.createScribblePatternSet(this.defs!, [lineColor]);
+                    fillPattern = emergencyPatterns.length > 0 ? emergencyPatterns[0] : lineColor;
+                }
+            } else {
+                fillPattern = lineColor;
+            }
 
             const area = d3.area<number>()
                 .x((_, i) => {

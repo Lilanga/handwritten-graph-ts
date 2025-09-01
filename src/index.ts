@@ -1,6 +1,7 @@
 import { LineChart } from './charts/LineChart';
 import { BarChart } from './charts/BarChart';
 import { PieChart } from './charts/PieChart';
+import { UXEnhancementUtils } from './utils/uxEnhancementUtils';
 import {
     LineChartData,
     LineChartConfig,
@@ -25,8 +26,8 @@ import {
 } from './types';
 import './styles/graph.scss';
 
-// Chart types supported by the library
-export { LineChart, BarChart, PieChart };
+// Chart types and utilities supported by the library
+export { LineChart, BarChart, PieChart, UXEnhancementUtils };
 
 // Exporting all types and interfaces for external use
 export type {
@@ -88,6 +89,7 @@ export default {
     LineChart,
     BarChart,
     PieChart,
+    UXEnhancementUtils,
     createGraph,
     createBarChart,
     createPieChart
